@@ -39,7 +39,6 @@ docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.
           "operation": {
             "type": "keyword"
           }
-          // Add extra fields here as needed
         }
       }
     }
