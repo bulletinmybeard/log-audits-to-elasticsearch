@@ -1,7 +1,6 @@
 ARG PYTHON_VERSION="3.12.2"
-ARG LINUX_DISTRO="alpine"
 
-FROM python:${PYTHON_VERSION}-${LINUX_DISTRO}
+FROM python:${PYTHON_VERSION}-alpine
 
 # Docker build arguments
 ARG POETRY_VERSION="1.8.2"
