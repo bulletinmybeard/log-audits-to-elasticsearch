@@ -94,8 +94,9 @@ async def create_audit_log(
 @app.post("/create-random")
 async def create_random_audit_log():
     try:
-        es.index(index=elastic_index_name, body=generate_random_audit_log().dict())
-        return {"status": "success"}
+        operations = create_bulk_operations(elastic_index_name, [generate_random_audit_log().dict()])
+        success, failed = helpers.bulk(es, operations)
+        return {"status": "success", "success": success, "failed": failed}
     except ValidationError as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Failed to create audit log")
