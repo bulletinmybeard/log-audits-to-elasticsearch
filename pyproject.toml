@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "service-audit"
+version = "0.1.0"
+description = ""
+authors = ["Robin Schulz <hello@rschu.me>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.0"
+uvicorn = "^0.28.0"
+pydantic = "^2.6.4"
+slowapi = "^0.1.9"
+gunicorn = "^21.2.0"
+elasticsearch = "^8.12.1"
+faker = "^24.2.0"
+flake8-pyproject = "^1.2.3"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.3.0"
+isort = "^5.13.2"
+flake8 = "^7.0.0"
+mypy = "^1.9.0"
+coverage = "^7.4.4"
+pre-commit = "^3.6.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+
+[tool.flake8]
+max-line-count = 600
+max-line-length = 100
+
+[tool.coverage.run]
+branch = true
+source = ["service_audit"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.mypy]
+python_version = 3.12
+check_untyped_defs = true
+ignore_missing_imports = true
+disallow_untyped_defs = true

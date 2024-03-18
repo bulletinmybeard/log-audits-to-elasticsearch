@@ -1,0 +1,99 @@
+version: '3'
+services:
+  service-audit:
+    container_name: service-audit
+    build:
+      context: .
+      dockerfile: docker/service-audit/Dockerfile
+    environment:
+      - API_PORT=8000
+    restart: unless-stopped
+    volumes:
+      - "./:/app"
+    depends_on:
+      - elasticsearch
+      - kibana
+    ports:
+      - "8000:8000"
+    networks:
+      service_audit:
+        ipv4_address: 172.70.0.2
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: arm64v8/elasticsearch:7.17.10
+    environment:
+      - discovery.type=single-node
+      - PIPELINE_WORKERS=4
+      - LOG_LEVEL=debug
+      - MONITORING_ENABLED=enabled
+#    BASIC AUTH
+#      - xpack.security.enabled=true
+#      - ELASTIC_USERNAME=elasticuser
+#      - ELASTIC_PASSWORD=elasticpassword
+#    API KEY
+#      - xpack.security.enabled=true
+#      - "ELASTIC_PASSWORD=changeme"
+#      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    user: root
+    restart: unless-stopped
+    volumes:
+      - sa_elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      service_audit:
+        ipv4_address: 172.70.0.3
+
+  kibana:
+    container_name: kibana
+    build:
+      context: ./docker/kibana
+      dockerfile: Dockerfile
+      args:
+        KIBANA_VERSION: "7.17.10"
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+#      - ELASTICSEARCH_USERNAME=elasticuser
+#      - ELASTICSEARCH_PASSWORD=elasticpassword
+    restart: unless-stopped
+    volumes:
+      - sa_kibana_data:/usr/share/kibana/data
+      - ./docker/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    networks:
+      service_audit:
+        ipv4_address: 172.70.0.4
+    depends_on:
+      - elasticsearch
+
+  backup:
+    container_name: backup
+    image: busybox
+    volumes:
+      - sa_elasticsearch_data:/usr/share/elasticsearch/data
+      - sa_kibana_data:/usr/share/kibana/data
+      - ./backup:/backup
+    command: sh ./backup/volume_backups.sh
+    restart: "no"
+    profiles:
+      - backup
+
+volumes:
+  sa_elasticsearch_data:
+  sa_kibana_data:
+
+networks:
+  service_audit:
+    driver: bridge
+    external: true
+    ipam:
+      config:
+        - subnet: 172.70.0.0/16
+          gateway: 172.70.0.1

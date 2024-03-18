@@ -1,0 +1,7 @@
+__pycache__
+.gitignore
+.pre-commit-config.yaml
+CODEOWNERS
+CHANGELOG
+README.md
+.env
