@@ -114,11 +114,11 @@ def anonymize_ip_address(ip_address: str) -> str:
     try:
         ip_obj = ipaddress.ip_address(ip_address)
         if ip_obj.version == 4:
-            octets = ip_address.split('.')
-            return '.'.join(octets[:2] + ['0', '0'])
+            octets = ip_address.split(".")
+            return ".".join(octets[:2] + ["0", "0"])
         elif ip_obj.version == 6:
-            hextets = ip_address.split(':')
-            anonymized_ip = ':'.join(hextets[:4] + ['0', '0', '0', '0'])
+            hextets = ip_address.split(":")
+            anonymized_ip = ":".join(hextets[:4] + ["0", "0", "0", "0"])
             return ipaddress.ip_address(anonymized_ip).compressed
     except ValueError:
         return ip_address
@@ -127,8 +127,8 @@ def anonymize_ip_address(ip_address: str) -> str:
 def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dict]:
     operations: List[Dict] = []
     for entry in log_entries:
-        for ip_field in ['ip_address', 'actor.ip_address', 'server_details.ip_address']:
-            ip_path = ip_field.split('.')
+        for ip_field in ["ip_address", "actor.ip_address", "server_details.ip_address"]:
+            ip_path = ip_field.split(".")
             current_level = entry
             for part in ip_path[:-1]:
                 if part in current_level:
@@ -136,7 +136,9 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
                 else:
                     break
             if ip_path[-1] in current_level:
-                current_level[ip_path[-1]] = anonymize_ip_address(current_level[ip_path[-1]])
+                current_level[ip_path[-1]] = anonymize_ip_address(
+                    current_level[ip_path[-1]]
+                )
         operations.append({"_index": index_name, "_op_type": "index", "_source": entry})
     return operations
 

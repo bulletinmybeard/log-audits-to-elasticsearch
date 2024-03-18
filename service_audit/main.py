@@ -94,7 +94,9 @@ async def create_audit_log(
 @app.post("/create-random")
 async def create_random_audit_log():
     try:
-        operations = create_bulk_operations(elastic_index_name, [generate_random_audit_log().dict()])
+        operations = create_bulk_operations(
+            elastic_index_name, [generate_random_audit_log().dict()]
+        )
         success, failed = helpers.bulk(es, operations)
         return {"status": "success", "success": success, "failed": failed}
     except ValidationError as e:
