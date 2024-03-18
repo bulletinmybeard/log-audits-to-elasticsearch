@@ -10,29 +10,20 @@ docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.
 ```
 
 ## Pre-Commit Hook
-
-Install the hook to run the linter before each commit
 ```bash
+# Install the hook to run the linter before each commit
 pre-commit install
-```
 
-Run the hook manually
-```bash
+# Run the hook manually
 pre-commit run --all-files
-```
 
-Auto run the hook before each commit
-```bash
+# Auto run the hook before each commit
 pre-commit autoupdate
-```
 
-Skipping the hook
-```bash
+# Skipping the hook
 git commit --no-verify -m "Your commit message"
-```
 
-Uninstall the hook
-```bash
+# Uninstall the hook
 pre-commit uninstall
 ```
 
@@ -210,50 +201,35 @@ The following examples demonstrate how to combine various search parameters to a
 }
 ```
 
-
 ## Code Quality and Testing
 These commands are essential to ensuring that the codebase remains clean, well-organized, and thoroughly tested.
 
-### Code Formatting and Linting
-
-Formats all Python files in the project directory to adhere to the Black code style.
 ```bash
+# Formats all Python files in the project directory to adhere to the Black code style.
 poetry run black .
-```
 
-Sorts the imports in all Python files in the project directory alphabetically, and automatically separated into sections.
-```bash
+# Sorts the imports in all Python files in the project directory alphabetically, and automatically separated into sections.
 poetry run isort .
-```
 
-Checks the project directory for any linting errors, including compliance with PEP 8.
-```bash
+# Checks the project directory for any linting errors, including compliance with PEP 8.
 poetry run flake8 .
-```
 
-Runs Flake8 linting, excluding any files in the `venv` directory.
-```bash
+# Runs Flake8 linting, excluding any files in the `venv` directory.
 poetry run flake8 --exclude=venv
-```
 
-Performs static type checking on all Python files in the project directory.
-```bash
+# Performs static type checking on all Python files in the project directory.
 poetry run mypy .
-```
 
-Runs MyPy for static type checking, excluding files in the `venv` directory.
-```bash
+# Runs MyPy for static type checking, excluding files in the `venv` directory.
 poetry run mypy . --exclude venv
 ```
 
 ### Running Tests (WIP)
-Runs all tests with Pytest under coverage, displaying print statements (`-s`).
 ```bash
+# Runs all tests with Pytest under coverage, displaying print statements (`-s`).
 poetry run coverage run -m pytest -s
-```
 
-Runs all tests with verbose output (`-vv` for very verbose) and displaying all print statements.
-```bash
+# Runs all tests with verbose output (`-vv` for very verbose) and displaying all print statements.
 poetry run coverage run -m pytest -s -vv
 ```
 
