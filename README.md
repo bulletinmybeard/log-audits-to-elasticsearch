@@ -1,6 +1,8 @@
 # service-audit
 
-Python REST API service for audit logging
+Python REST API service for audit logging, which is currently under development.
+
+> **WORK IN PROGRESS!!!!!**
 
 ```bash
 # Create a new Docker network for the services
