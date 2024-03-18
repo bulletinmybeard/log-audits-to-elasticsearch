@@ -260,9 +260,9 @@ poetry run coverage run -m pytest -s -vv
 ## TODO
 - [ ] Finalize the README and documentation
 - [ ] Finalize the audit log search filters (`/search`)
-- [ ] Finalize Pydantic models for request and response data
+- [x] Finalize Pydantic models for request and response data
 - [ ] Finalize Elasticsearch and Kibana authentication
-- [ ] Update the document log entry schema
+- [x] Update the document log entry mappings
 - [ ] Add API tests
 - [ ] Add API middlewares
 - [ ] Add CI/CD pipeline / Workflows / Actions
