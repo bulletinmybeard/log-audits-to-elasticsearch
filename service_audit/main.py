@@ -64,9 +64,7 @@ app = FastAPI(
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_exception_handler(exc: RequestValidationError) -> JSONResponse:
     errors = exc.errors()
     simplified_errors = [
         {"msg": error["msg"], "type": error["type"]} for error in errors
