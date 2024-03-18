@@ -1,20 +1,107 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from faker import Faker
 
-from service_audit.models import SearchParams
+from service_audit.models import (
+    ActorModel,
+    AuditLogEntry,
+    ResourceModel,
+    SearchParams,
+    ServerDetailsModel,
+)
 
 fake = Faker()
 
 
-def build_query_body(params: SearchParams) -> Dict:
-    query_body = {
-        "query": {"match_all": {}},
+def build_query_body(params: SearchParams) -> Dict[str, Any]:
+    query_body: Dict[str, Any] = {
+        "query": {"bool": {"must": [], "must_not": [], "should": []}},
         "sort": [{params.sort_by: {"order": params.sort_order}}],
         "size": params.max_results,
     }
+
+    if params.text_search_fields:
+        for field, query in params.text_search_fields.items():
+            query_body["query"]["bool"]["must"].append({"match": {field: query}})
+
+    if params.search_query:
+        query_body["query"]["bool"]["must"].append(
+            {"query_string": {"query": params.search_query}}
+        )
+
+    # Hmm...
+    # if params.search_query and params.text_search_fields:
+    #     must_queries.append({
+    #         "multi_match": {
+    #             "query": params.search_query,
+    #             "fields": params.text_search_fields
+    #         }
+    #     })
+
+    if params.date_range_start and params.date_range_end:
+        query_body["query"]["bool"]["must"].append(
+            {
+                "range": {
+                    "timestamp": {
+                        "gte": params.date_range_start,
+                        "lte": params.date_range_end,
+                    }
+                }
+            }
+        )
+
+    if params.exact_matches:
+        for field, value in params.exact_matches.items():
+            if isinstance(value, list):
+                query_body["query"]["bool"]["must"].append({"terms": {field: value}})
+            else:
+                query_body["query"]["bool"]["must"].append({"term": {field: value}})
+
     if params.fields != "all":
         query_body["_source"] = params.fields
+
+    if params.exclusions:
+        for field, value in params.exclusions.items():
+            if isinstance(value, list):
+                query_body["query"]["bool"]["must_not"].append(
+                    {"terms": {field: value}}
+                )
+            else:
+                query_body["query"]["bool"]["must_not"].append({"term": {field: value}})
+
+    # # Include nested fields logic
+    # if params.include_nested:
+    #     query_body["_source"] = {
+    #         "includes": ["*", "actor.*", "resource.*", "server_details.*"]
+    #     }
+    #     ## Add a generic nested query structure; specifics would depend on input
+    #     # nested_queries: List[Any] = [{
+    #     #     "nested": {
+    #     #         "path": "actor",
+    #     #         "query": {
+    #     #             "bool": {
+    #     #                 "must": [
+    #     #                     # Example condition - match a specific actor type
+    #     #                     {"match": {"actor.type": "user"}}
+    #     #                 ]
+    #     #             }
+    #     #         }
+    #     #     }
+    #     # }]
+    #     #
+    #     # # Example: Searching within the actor nested object
+    #     #
+    #     # # Incorporate nested queries into the main query body
+    #     # if not query_body["query"]["bool"].get("must"):
+    #     #     query_body["query"]["bool"]["must"] = []
+    #     # query_body["query"]["bool"]["must"].extend(nested_queries)
+
+    if params.min_should_match:
+        query_body["query"]["bool"]["minimum_should_match"] = params.min_should_match
+
+    if params.aggregations:
+        query_body["aggs"] = params.aggregations
+
     return query_body
 
 
@@ -29,40 +116,39 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
     return operations
 
 
-def generate_random_audit_log() -> Dict:
-    return {
-        "timestamp": fake.date_time_this_year().isoformat(),
-        "event_name": fake.random_element(
+def generate_random_audit_log() -> AuditLogEntry:
+    return AuditLogEntry(
+        timestamp=fake.date_time_this_year().isoformat(),
+        event_name=fake.random_element(
             ["user_login", "data_backup", "file_access", "role_update"]
         ),
-        "actor": {
-            "identifier": fake.user_name(),
-            "type": fake.random_element(["user", "system"]),
-            "ip_address": fake.ipv4(),
-            "user_agent": fake.user_agent(),
-        },
-        "action": fake.random_element(["create", "update", "delete", "login"]),
-        "comment": fake.sentence(),
-        "context": fake.random_element(
+        actor=ActorModel(
+            identifier=fake.random_element(["j.doe", "j.dot", "a.smith", "s.jones"]),
+            type=fake.random_element(["user", "system"]),
+            ip_address=fake.ipv4(),
+            user_agent=fake.user_agent(),
+        ),
+        action=fake.random_element(["create", "update", "delete", "login"]),
+        comment=fake.sentence(),
+        context=fake.random_element(
             ["user_management", "system_backup", "content_delivery", "security"]
         ),
-        "resource": {
-            "type": fake.random_element(
-                ["user_account", "database", "blog_post", "system_file"]
+        resource=ResourceModel(
+            type=fake.random_element(
+                ["user_account", "database", "cronjob", "system_file"]
             ),
-            "id": fake.uuid4(),
-        },
-        "operation": fake.random_element(["create", "read", "update", "delete"]),
-        "status": fake.random_element(["success", "failure"]),
-        "endpoint": fake.uri_path(),
-        "server_details": {
-            "hostname": fake.hostname(),
-            "vm_name": fake.word(),
-            "ip_address": fake.ipv4(),
-        },
-        "meta": {
-            # Example of dynamic meta data, adjust as needed for your use case
+            id=fake.uuid4(),
+        ),
+        operation=fake.random_element(["create", "read", "update", "delete"]),
+        status=fake.random_element(["success", "failure"]),
+        endpoint=fake.uri_path(),
+        server_details=ServerDetailsModel(
+            hostname=fake.hostname(),
+            vm_name=fake.word(),
+            ip_address=fake.ipv4(),
+        ),
+        meta={
             "request_size": fake.random_number(digits=5),
             "response_time_ms": fake.random_int(min=1, max=1000),
         },
-    }
+    )

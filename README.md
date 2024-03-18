@@ -10,43 +10,9 @@ docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.
 ```
 
 ```bash
-# Index mapping for audit logs
-{
-  "mappings": {
-    "properties": {
-      "id": {
-        "type": "keyword"
-      },
-      "user": {
-        "type": "keyword"
-      },
-      "action": {
-        "type": "keyword"
-      },
-      "entity": {
-        "type": "keyword"
-      },
-      "entityId": {
-        "type": "keyword"
-      },
-      "timestamp": {
-        "type": "date"
-      },
-      "details": {
-        "type": "object",
-        "properties": {
-          "documentName": {
-            "type": "keyword"
-          },
-          "operation": {
-            "type": "keyword"
-          }
-        }
-      }
-    }
-  }
-}
-```
+# Create a new index for audit logs
+curl -X PUT "http://elasticsearch:9200/audit_log" -H 'Content-Type: application/json' -d'{ "settings": { "number_of_shards": 1, "number_of_replicas": 0 } }'
+````
 
 ## Pre-Commit Hook
 
@@ -75,22 +41,180 @@ Uninstall the hook
 pre-commit uninstall
 ```
 
-## Search Endpoint Filters (WIP)
+## Search Endpoint Filters
+The search endpoint supports various `POST` parameters for filtering search results and enabling customizable queries. Below is a detailed overview of each supported parameter.
 
-The search endpoint supports the following `POST` param filters:
+### Limit
+The `max_results` parameter controls the maximum number of search hits to return. It provides a way to paginate results or limit the response size for large datasets.
 
-| Parameter   | Example              | Default    | Info                    |
-|:------------|:---------------------|:-----------|:------------------------|
-| max_results | 10 (int)             | 50         | fewfwe                  |
-| fields      | ["service", "action"] | all fields | Elastic document fields |
+| Parameter     | Type    | Range | Default |
+|---------------|---------|-------|---------|
+| `max_results` | Integer | 1–500 | 500     |
+
+
+#### Example Usage:
+limit the search results to `10` items:
 
 ```json
 {
-  "max_results": 2,
-  "fields": ["service", "action"],
-  ...
+  "max_results": 10
 }
 ```
+
+### Fields
+The `fields` parameter specifies which document fields to include in the search results. By default, all fields are included.
+
+| Parameter | Type                | Default  |
+|-----------|---------------------|----------|
+| `fields`  | List[str] or string | "all"     |
+
+#### Example Usage:
+Retrieve only the fields `event_name` and `timestamp`:
+
+```json
+{
+  "fields": ["event_name", "timestamp"]
+}
+```
+
+### Sort By and Sort Order
+Use the `sort_by` and `sort_order` parameters determine the field by which search results are sorted and the direction of the sort, respectively.
+
+| Parameter   | Type   | Default     |
+|-------------|--------|-------------|
+| `sort_by`   | string | "timestamp" |
+| `sort_order`| string | "asc"       |
+
+#### Example Usage:
+Sort search results by `event_name` in descending order:
+
+```json
+{
+"sort_by": "event_name",
+"sort_order": "desc"
+}
+```
+
+### Date Range
+The `date_range_start` and `date_range_end` parameters filter search results to only include hits within the specified date range.
+
+| Parameter        | Type   | Default   |
+|------------------|--------|-----------|
+| `date_range_start` | string | None    |
+| `date_range_end`   | string | None    |
+
+#### Example Usage:
+Filter search results between January 1st and January 31st, 2024:
+
+```json
+{
+  "date_range_start": "2024-01-01T00:00:00Z",
+  "date_range_end": "2024-01-31T23:59:59Z"
+}
+```
+
+### Search Query (WIP)
+The `search_query` parameter enables a free-text search within the indexed documents.
+
+| Parameter     | Type   | Default |
+|---------------|--------|---------|
+| `search_query`| string | None    |
+
+#### Example Usage:
+Search for documents related to "last update":
+
+```json
+{
+  "search_query": "last update"
+}
+```
+
+### Exact Matches
+The `exact_matches` parameter allows filtering search results based on exact matches for specified fields.
+
+| Parameter      | Type                      | Default      |
+|----------------|---------------------------|--------------|
+| `exact_matches`| Dict[str, Union[str, List[str]]] | None  |
+
+#### Example Usage:
+Find documents where `status` is "success" and `action` is "login":
+
+```json
+{
+  "exact_matches": {
+    "status": "success",
+    "action": "login"
+  }
+}
+```
+
+### Combined Parameters
+The following examples demonstrate how to combine various search parameters to achieve precise, customized search results that cater to different query needs and scenarios.
+
+#### Example 1: Date Range with Exact Matches and Sorting
+```json
+{
+  "date_range_start": "2024-01-01T00:00:00Z",
+  "date_range_end": "2024-01-31T23:59:59Z",
+  "exact_matches": {
+    "event_name": "data_backup"
+  },
+  "sort_by": "timestamp",
+  "sort_order": "desc"
+}
+```
+
+#### Example 2: Free Text Search with Field Limitation and Ascending Sort Order
+```json
+{
+  "search_query": "login success",
+  "fields": ["event_name", "timestamp"],
+  "sort_by": "event_name",
+  "sort_order": "asc"
+}
+```
+
+#### Example 3: Exclusions with Date Range and Aggregations
+```json
+{
+  "date_range_start": "2024-02-01T00:00:00Z",
+  "date_range_end": "2024-02-28T23:59:59Z",
+  "exclusions": {
+    "event_name": ["role_update", "file_access"]
+  },
+  "aggregations": {
+    "status_counts": {
+      "terms": {
+        "field": "status"
+      }
+    }
+  }
+}
+```
+
+#### Example 4: Combining Free Text and Exact Matches with Minimum Should Match
+```json
+{
+  "search_query": "critical update",
+  "exact_matches": {
+    "context": "system_maintenance"
+  },
+  "min_should_match": 1,
+  "sort_by": "timestamp",
+  "sort_order": "desc"
+}
+```
+
+### Example 5: Nested Field Inclusion with Date Range and Custom Fields
+```json
+{
+  "date_range_start": "2024-03-01T00:00:00Z",
+  "date_range_end": "2024-03-15T23:59:59Z",
+  "fields": ["timestamp", "actor.identifier", "actor.user_agent", "resource.type"],
+  "include_nested": true
+}
+```
+
 
 ## Code Quality and Testing
 These commands are essential to ensuring that the codebase remains clean, well-organized, and thoroughly tested.
