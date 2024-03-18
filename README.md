@@ -8,69 +8,6 @@ docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.
 ```
 
 ```bash
-# Create a new index for audit logs
-curl -X PUT "http://elasticsearch:9200/audit_log" -H 'Content-Type: application/json' -d'{ "settings": { "number_of_shards": 1, "number_of_replicas": 0 } }'
-
-# Create a new index for audit logs with a mapping
-curl -X PUT "http://elasticsearch:9200/audit_log" -H 'Content-Type: application/json' -d'
-{
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 0
-  },
-  "mappings": {
-    "properties": {
-      "game_id": { "type": "keyword" },
-      "platform": { "type": "keyword" },
-      "version": { "type": "keyword" },
-      "service": { "type": "keyword" },
-      "object_type": { "type": "keyword" },
-      "object_key": { "type": "keyword" },
-      "object_name": { "type": "keyword" },
-      "object_data": { "type": "text" },
-      "extra_fields": { "type": "object" },
-      "action": { "type": "keyword" },
-      "user": { "type": "keyword" },
-      "comment": { "type": "text" },
-      "timestamp": { "type": "date" }
-    }
-  }
-}'
-
-# Create an index lifecycle policy to never delete any audit log documents
-curl -X PUT "http://elasticsearch:9200/_ilm/policy/never_delete" -H 'Content-Type: application/json' -d '
-{
-  "policy": {
-    "phases": {
-      "hot": {
-        "min_age": "0ms",
-        "actions": {
-          "rollover": {
-            "max_age": "36500d"
-          }
-        }
-      },
-      "delete": {
-        "min_age": "36500d",
-        "actions": {}
-      }
-    }
-  }
-}'
-
-# Apply the index lifecycle policy to the audit_log index
-curl -X PUT "http://elasticsearch:9200/audit_log/_settings" -H 'Content-Type: application/json' -d '
-{
-  "index": {
-    "lifecycle": {
-      "name": "never_delete",
-      "rollover_alias": "audit_log"
-    }
-  }
-}'
-```
-
-```bash
 # Index mapping for audit logs
 {
   "mappings": {
