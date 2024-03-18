@@ -9,11 +9,6 @@ Python REST API service for audit logging, which is currently under development.
 docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.1 service_audit
 ```
 
-```bash
-# Create a new index for audit logs
-curl -X PUT "http://elasticsearch:9200/audit_log" -H 'Content-Type: application/json' -d'{ "settings": { "number_of_shards": 1, "number_of_replicas": 0 } }'
-````
-
 ## Pre-Commit Hook
 
 Install the hook to run the linter before each commit
