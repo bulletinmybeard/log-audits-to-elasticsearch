@@ -66,6 +66,7 @@ app = FastAPI(
 async def validation_exception_handler(
     _: Any, exc: RequestValidationError
 ) -> JSONResponse:
+    """Handle validation errors."""
     errors = exc.errors()
     simplified_errors = [
         {"msg": error["msg"], "type": error["type"]} for error in errors
@@ -80,6 +81,7 @@ async def validation_exception_handler(
 async def create_audit_log(
     audit_log: Union[AuditLogEntry, List[AuditLogEntry]] = Body(...)
 ) -> CreateResponse:
+    """Create an audit log entry."""
     log_entries = [audit_log] if not isinstance(audit_log, list) else audit_log
     validated_logs = [entry.dict() for entry in log_entries]
     return await process_audit_logs(es, elastic_index_name, validated_logs)
@@ -87,6 +89,7 @@ async def create_audit_log(
 
 @app.post("/create-random")
 async def create_random_audit_log() -> CreateResponse:
+    """Create a random audit log entry."""
     random_log = generate_random_audit_log().dict()
     return await process_audit_logs(es, elastic_index_name, [random_log])
 
@@ -95,6 +98,7 @@ async def create_random_audit_log() -> CreateResponse:
 async def search_audit_log_entries(
     params: Optional[SearchParams] = Body(default=None),
 ) -> SearchResponse:
+    """Search for audit log entries based on the provided search parameters."""
     try:
         query_body = build_query_body(params or SearchParams())
         result = es.search(index=f"{elastic_index_name}*", body=query_body)
@@ -109,6 +113,7 @@ async def search_audit_log_entries(
 
 @app.get("/healthcheck", response_class=JSONResponse)
 async def health_check() -> Dict[str, str]:
+    """Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready."""
     if es.ping():
         return {"status": "OK"}
     else:
