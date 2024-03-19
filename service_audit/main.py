@@ -43,6 +43,12 @@ es = Elasticsearch(
 
 @asynccontextmanager
 async def lifespan(_) -> AbstractAsyncContextManager[Any]:
+    """
+    An asynchronous context manager for managing the lifecycle of the audit log API.
+
+    Args:
+        _ : Just a placeholder.
+    """
     logger.info("Audit log API starting up")
     # Do something here...
     yield
@@ -66,7 +72,19 @@ app = FastAPI(
 async def validation_exception_handler(
     _: Any, exc: RequestValidationError
 ) -> JSONResponse:
-    """Handle validation errors."""
+    """
+    Handles validation errors.
+
+    Args:
+        _ : The request object which is not used in this handler but it's part of the
+            signature required by FastAPI.
+        exc : The `RequestValidationError` instance containing details about the validation
+              checks.
+
+    Returns:
+        A `JSONResponse` object with a 422 status code and a json body containing the simplified
+        list of validation errors.
+    """
     errors = exc.errors()
     simplified_errors = [
         {"msg": error["msg"], "type": error["type"]} for error in errors
@@ -81,7 +99,21 @@ async def validation_exception_handler(
 async def create_audit_log(
     audit_log: Union[AuditLogEntry, List[AuditLogEntry]] = Body(...)
 ) -> CreateResponse:
-    """Create an audit log entry."""
+    """
+    Receives an audit log entry or a list of entries, validates them, and processes
+    them to be stored in Elasticsearch.
+
+    Args:
+        audit_log (Union[AuditLogEntry, List[AuditLogEntry]]): The audit log entry or entries
+            to be created. This can either be a single `AuditLogEntry` object or a list of such
+            objects.
+
+    Returns:
+        CreateResponse
+
+    Raises:
+        HTTPException
+    """
     log_entries = [audit_log] if not isinstance(audit_log, list) else audit_log
     validated_logs = [entry.dict() for entry in log_entries]
     return await process_audit_logs(es, elastic_index_name, validated_logs)
@@ -89,7 +121,15 @@ async def create_audit_log(
 
 @app.post("/create-random")
 async def create_random_audit_log() -> CreateResponse:
-    """Create a random audit log entry."""
+    """
+    Generates and stores a single random audit log entry.
+
+    Returns:
+        CreateResponse
+
+    Raises:
+        HTTPException
+    """
     random_log = generate_random_audit_log().dict()
     return await process_audit_logs(es, elastic_index_name, [random_log])
 
@@ -98,7 +138,21 @@ async def create_random_audit_log() -> CreateResponse:
 async def search_audit_log_entries(
     params: Optional[SearchParams] = Body(default=None),
 ) -> SearchResponse:
-    """Search for audit log entries based on the provided search parameters."""
+    """
+    Performs a search query against audit log entries stored in Elasticsearch based on
+    a set of search parameters.
+
+    Args:
+        params (Optional[SearchParams], optional): The search parameters used to filter
+            audit log entries. Defaults to an empty instance of `SearchParams` if not
+            provided, resulting in a search that returns all entries.
+
+    Returns:
+        SearchResponse
+
+    Raises:
+        HTTPException
+    """
     try:
         query_body = build_query_body(params or SearchParams())
         result = es.search(index=f"{elastic_index_name}*", body=query_body)
@@ -113,7 +167,15 @@ async def search_audit_log_entries(
 
 @app.get("/healthcheck", response_class=JSONResponse)
 async def health_check() -> Dict[str, str]:
-    """Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready."""
+    """
+    Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready.
+
+    Returns:
+        A dictionary with a single key-value pair.
+
+    Raises:
+        HTTPException
+    """
     if es.ping():
         return {"status": "OK"}
     else:
