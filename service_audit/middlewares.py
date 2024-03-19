@@ -1,8 +1,10 @@
 import os
+from typing import Any, Callable
 
-from fastapi import Request, status
-from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 # https://slowapi.readthedocs.io/en/latest/
 # https://github.com/laurents/slowapi
@@ -15,31 +17,26 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # app.add_middleware(GZipMiddleware, minimum_size=1000)
 # app.add_middleware(APIKeyMiddleware)
-# app.add_middleware(SuppressFaviconLoggingMiddleware)
 # app.add_middleware(
 #     CORSMiddleware,
-#     allow_origins=["*"],
+#     allow_origins=["*"],  # Specify domains or use ["*"] for open access
 #     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
+#     allow_methods=["*"],  # Specify HTTP methods or use ["*"] for all methods
+#     allow_headers=["*"],  # Specify headers or use ["*"] for all headers
 # )
 
 # limiter = Limiter(key_func=get_remote_address)
-api_key = os.getenv("X_API_KEY", None)
-
-
-class SuppressFaviconLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path == "/favicon.ico":
-            return PlainTextResponse("", status_code=204)
-        response = await call_next(request)
-        return response
+api_key = os.getenv("X_API_KEY")
 
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Replace 'your_api_key_here' with your actual expected API key value
-        expected_api_key = api_key
+    @staticmethod
+    async def api_key_middleware(
+        request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:
+        expected_api_key = (
+            api_key  # Ensure `api_key` is defined somewhere in your context
+        )
         api_key_header = request.headers.get("X-API-Key")
 
         if api_key_header != expected_api_key:
@@ -48,4 +45,6 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Invalid API Key"},
             )
 
-        return await call_next(request)
+        response = await call_next(request)
+        assert isinstance(response, Response), "call_next must return a Response object"
+        return response
