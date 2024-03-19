@@ -92,9 +92,9 @@ class AuditLogEntry(BaseModel):
 
 class SearchParams(BaseModel):
     max_results: Optional[int] = Field(
-        500, ge=1, le=500, description="Limit the number of hits returned."
+        500, ge=1, le=1000, description="Limit the number of hits returned."
     )
-    fields: Union[List[str], str] = Field(
+    fields: Optional[Union[List[str], str]] = Field(
         default="all",
         description="Specific fields to include in the search results or 'all' for everything.",
     )
