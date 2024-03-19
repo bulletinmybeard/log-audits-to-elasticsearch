@@ -106,10 +106,6 @@ def build_query_body(params: SearchParams) -> Dict[str, Any]:
     return query_body
 
 
-def extract_audit_logs(hits: List[Dict]) -> List[Dict]:
-    return [hit["_source"] for hit in hits]
-
-
 def anonymize_ip_address(ip_address: str) -> str:
     try:
         ip_obj = ipaddress.ip_address(ip_address)

@@ -91,15 +91,15 @@ class AuditLogEntry(BaseModel):
 
 
 class SearchParams(BaseModel):
-    max_results: int = Field(
+    max_results: Optional[int] = Field(
         500, ge=1, le=500, description="Limit the number of hits returned."
     )
     fields: Union[List[str], str] = Field(
         default="all",
         description="Specific fields to include in the search results or 'all' for everything.",
     )
-    sort_by: str = Field(default="timestamp", description="Field to sort by")
-    sort_order: str = Field(
+    sort_by: Optional[str] = Field(default="timestamp", description="Field to sort by")
+    sort_order: Optional[str] = Field(
         default="asc",
         description="Sort order: 'asc' for ascending or 'desc' for descending.",
     )
@@ -133,7 +133,7 @@ class SearchParams(BaseModel):
     )
 
     @field_validator("fields")
-    def validate_fields(cls, value):
+    def validate_fields(cls, value: Union[List[str], str]) -> Union[List[str], str]:
         allowed_fields = {
             "timestamp",
             "event_name",
@@ -162,7 +162,52 @@ class SearchParams(BaseModel):
         raise ValueError("fields must be either 'all' or a list of allowed field names")
 
     @field_validator("sort_order")
-    def sort_order_valid(cls, value):
+    def sort_order_valid(cls, value: str) -> str:
         if value not in ["asc", "desc"]:
             raise ValueError("sort_order must be 'asc' or 'desc'")
         return value
+
+
+class ResponseActor(BaseModel):
+    identifier: Optional[str]
+    type: Optional[str]
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+
+
+class ResponseResource(BaseModel):
+    type: Optional[str]
+    id: Optional[str]
+
+
+class ResponseServerDetails(BaseModel):
+    hostname: Optional[str]
+    vm_name: Optional[str]
+    ip_address: Optional[str]
+
+
+class ResponseLogEntry(BaseModel):
+    timestamp: Optional[str]
+    event_name: Optional[str]
+    actor: Optional[ResponseActor]
+    action: Optional[str]
+    comment: Optional[str]
+    context: Optional[str]
+    resource: Optional[ResponseResource]
+    operation: Optional[str]
+    status: Optional[str]
+    endpoint: Optional[str]
+    server_details: Optional[ResponseServerDetails]
+    meta: Optional[Dict[str, Any]]
+
+
+class SearchResponse(BaseModel):
+    hits: int
+    logs: List[ResponseLogEntry]
+
+
+class CreateResponse(BaseModel):
+    status: str
+    success_count: int
+    failed_count: int
+    failed_items: List[Dict] = []

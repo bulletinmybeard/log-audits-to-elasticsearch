@@ -1,7 +1,7 @@
 import logging
 import os
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from elasticsearch import Elasticsearch, helpers
 from fastapi import Body, FastAPI, HTTPException
@@ -9,12 +9,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from service_audit.models import AuditLogEntry
+from service_audit.models import (
+    AuditLogEntry,
+    CreateResponse,
+    ResponseLogEntry,
+    SearchResponse,
+)
 from service_audit.utils import (
     SearchParams,
     build_query_body,
     create_bulk_operations,
-    extract_audit_logs,
     generate_random_audit_log,
 )
 
@@ -75,7 +79,7 @@ async def validation_exception_handler(
 @app.post("/create")
 async def create_audit_log(
     audit_log: Union[AuditLogEntry, List[AuditLogEntry]] = Body(...)
-):
+) -> CreateResponse:
     try:
         if not isinstance(audit_log, list):
             audit_log = [audit_log]
@@ -83,45 +87,60 @@ async def create_audit_log(
         validated_logs = [entry.dict() for entry in audit_log]
 
         operations = create_bulk_operations(elastic_index_name, validated_logs)
-        success, failed = helpers.bulk(es, operations)
+        success_count, failed = helpers.bulk(es, operations)
+        failed_count = len(failed) if isinstance(failed, list) else failed
+        failed_items = failed if isinstance(failed, list) else []
 
-        return {"status": "success", "success": success, "failed": failed}
+        return CreateResponse(
+            status="success",
+            success_count=success_count,
+            failed_count=failed_count,
+            failed_items=failed_items,
+        )
     except ValidationError as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Failed to create audit logs")
 
 
 @app.post("/create-random")
-async def create_random_audit_log():
+async def create_random_audit_log() -> CreateResponse:
     try:
         operations = create_bulk_operations(
             elastic_index_name, [generate_random_audit_log().dict()]
         )
-        success, failed = helpers.bulk(es, operations)
-        return {"status": "success", "success": success, "failed": failed}
+        success_count, failed = helpers.bulk(es, operations)
+        failed_count = len(failed) if isinstance(failed, list) else failed
+        failed_items = failed if isinstance(failed, list) else []
+
+        return CreateResponse(
+            status="success",
+            success_count=success_count,
+            failed_count=failed_count,
+            failed_items=failed_items,
+        )
     except ValidationError as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Failed to create audit log")
 
 
 @app.post("/search")
-async def search_audit_log_entries(params: Optional[SearchParams] = Body(default=None)):
+async def search_audit_log_entries(
+    params: Optional[SearchParams] = Body(default=None),
+) -> SearchResponse:
     try:
-        params = params or SearchParams()
-
-        query_body = build_query_body(params)
+        query_body = build_query_body(params or SearchParams())
         result = es.search(index=f"{elastic_index_name}*", body=query_body)
         hits = result["hits"]["hits"]
-        audit_logs = extract_audit_logs(hits)
+        audit_logs = [ResponseLogEntry(**log["_source"]) for log in hits]
 
-        return {"hits": len(hits), "logs": audit_logs}
+        return SearchResponse(hits=len(hits), logs=audit_logs)
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
 
 
 @app.get("/healthcheck", response_class=JSONResponse)
-async def health_check():
+async def health_check() -> Dict[str, str]:
     if es.ping():
         return {"status": "OK"}
     else:
