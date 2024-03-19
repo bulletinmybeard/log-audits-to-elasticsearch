@@ -216,7 +216,7 @@ def generate_random_audit_log() -> AuditLogEntry:
 
 
 async def process_audit_logs(
-    es, elastic_index_name: str, log_entries: List[Dict]
+    es: Any, elastic_index_name: str, log_entries: List[Dict]
 ) -> CreateResponse:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.

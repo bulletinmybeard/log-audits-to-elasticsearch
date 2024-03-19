@@ -1,8 +1,8 @@
 import logging
 import os
 import traceback
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Any, Dict, List, Optional, Union
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 from elasticsearch import Elasticsearch
 from fastapi import Body, FastAPI, HTTPException
@@ -35,14 +35,19 @@ logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, log_level, logging.ERROR))
 logger.addHandler(logging.StreamHandler())
 
-es = Elasticsearch(
-    [elasticsearch_host],
-    # http_auth=(elastic_username, elastic_password)
-)
+# Initialize the Elasticsearch client and raise an error if the host is not set
+# as Elasticsearch is mandatory for the service to work.
+if elasticsearch_host is not None:
+    es = Elasticsearch(
+        hosts=[elasticsearch_host],
+        # http_auth=(elastic_username, elastic_password)
+    )
+else:
+    raise ValueError("ELASTICSEARCH_HOST environment variable is not set.")
 
 
 @asynccontextmanager
-async def lifespan(_) -> AbstractAsyncContextManager[Any]:
+async def lifespan(_: Any) -> AsyncGenerator[None, None]:
     """
     An asynchronous context manager for managing the lifecycle of the audit log API.
 
@@ -154,7 +159,7 @@ async def search_audit_log_entries(
         HTTPException
     """
     try:
-        query_body = build_query_body(params or SearchParams())
+        query_body = build_query_body(params or SearchParams())  # type: ignore
         result = es.search(index=f"{elastic_index_name}*", body=query_body)
         hits = result["hits"]["hits"]
         audit_logs = [ResponseLogEntry(**log["_source"]) for log in hits]
