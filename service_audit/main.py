@@ -98,8 +98,9 @@ async def validation_exception_handler(
         {
             "msg": error["msg"],
             "type": error["type"],
-            "option": error["loc"][1] if len(error["loc"]) > 1 else None
-        } for error in errors
+            "option": error["loc"][1] if len(error["loc"]) > 1 else None,
+        }
+        for error in errors
     ]
     return JSONResponse(
         status_code=422,
