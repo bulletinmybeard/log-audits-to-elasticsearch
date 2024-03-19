@@ -115,6 +115,19 @@ def build_query_body(params: SearchParams) -> Dict[str, Any]:
 
 
 def anonymize_ip_address(ip_address: str) -> str:
+    """
+    Anonymizes an IP address by replacing the last segments with zeros.
+    For IPv4 addresses, the last two octets are set to zero.
+    For IPv6 addresses, the last four hextets are replaced with zeros,
+    and the address is then compressed to its shortest form.
+    If the input is not a valid IP address, it is returned unchanged.
+
+    Args:
+    - ip_address (str): The IP address to anonymize.
+
+    Returns:
+    - str: The anonymized IP address.
+    """
     try:
         ip_obj = ipaddress.ip_address(ip_address)
         if ip_obj.version == 4:
@@ -129,6 +142,17 @@ def anonymize_ip_address(ip_address: str) -> str:
 
 
 def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dict]:
+    """
+    This bulk helper function prepares a list of operations for the Elasticsearch bulk API
+    based on the provided log entries.
+
+    Args:
+    - index_name (str): The name of the Elasticsearch index
+    - log_entries (List[Dict]): A list of log entry dictionaries to be processed.
+
+    Returns:
+    - List[Dict]: A list of dictionaries formatted for the Elasticsearch bulk API.
+    """
     operations: List[Dict] = []
     for entry in log_entries:
         for ip_field in ["ip_address", "actor.ip_address", "server_details.ip_address"]:
@@ -148,6 +172,12 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
 
 
 def generate_random_audit_log() -> AuditLogEntry:
+    """
+    Generates a random audit log entry using the Faker library.
+
+    Returns:
+    - AuditLogEntry: A randomly generated audit log entry.
+    """
     return AuditLogEntry(
         timestamp=fake.date_time_this_year().isoformat(),
         event_name=fake.random_element(
@@ -188,6 +218,20 @@ def generate_random_audit_log() -> AuditLogEntry:
 async def process_audit_logs(
     es, elastic_index_name: str, log_entries: List[Dict]
 ) -> CreateResponse:
+    """
+    Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
+
+    Args:
+    - es: An instance of the Elasticsearch client.
+    - elastic_index_name (str): The name of the Elasticsearch index.
+    - log_entries (List[Dict]): A list of audit log entries to be processed.
+
+    Returns:
+    - CreateResponse
+
+    Raises:
+    - HTTPException
+    """
     try:
         operations = create_bulk_operations(elastic_index_name, log_entries)
         success_count, failed = helpers.bulk(es, operations)
