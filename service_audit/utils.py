@@ -1,17 +1,24 @@
 import ipaddress
+import logging
 from typing import Any, Dict, List
 
+from elasticsearch import helpers
 from faker import Faker
+from fastapi import HTTPException
+from pydantic import ValidationError
 
 from service_audit.models import (
     ActorModel,
     AuditLogEntry,
+    CreateResponse,
     ResourceModel,
     SearchParams,
     ServerDetailsModel,
 )
 
 fake = Faker()
+
+logger = logging.getLogger(__name__)
 
 
 def build_query_body(params: SearchParams) -> Dict[str, Any]:
@@ -175,3 +182,23 @@ def generate_random_audit_log() -> AuditLogEntry:
             "response_time_ms": fake.random_int(min=1, max=1000),
         },
     )
+
+
+async def process_audit_logs(
+    es, elastic_index_name: str, log_entries: List[Dict]
+) -> CreateResponse:
+    try:
+        operations = create_bulk_operations(elastic_index_name, log_entries)
+        success_count, failed = helpers.bulk(es, operations)
+        failed_count = len(failed) if isinstance(failed, list) else failed
+        failed_items = failed if isinstance(failed, list) else []
+
+        return CreateResponse(
+            status="success",
+            success_count=success_count,
+            failed_count=failed_count,
+            failed_items=failed_items,
+        )
+    except ValidationError as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail="Failed to process audit logs")
