@@ -2,7 +2,7 @@ import logging
 import os
 import traceback
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
 
 from elasticsearch import Elasticsearch
 from fastapi import Body, FastAPI, HTTPException
@@ -44,6 +44,9 @@ if elasticsearch_host is not None:
     )
 else:
     raise ValueError("ELASTICSEARCH_HOST environment variable is not set.")
+
+if elastic_index_name is None:
+    raise ValueError("ELASTIC_INDEX_NAME environment variable is not set.")
 
 
 @asynccontextmanager
@@ -121,7 +124,7 @@ async def create_audit_log(
     """
     log_entries = [audit_log] if not isinstance(audit_log, list) else audit_log
     validated_logs = [entry.dict() for entry in log_entries]
-    return await process_audit_logs(es, elastic_index_name, validated_logs)
+    return await process_audit_logs(es, cast(str, elastic_index_name), validated_logs)
 
 
 @app.post("/create-random")
@@ -136,7 +139,7 @@ async def create_random_audit_log() -> CreateResponse:
         HTTPException
     """
     random_log = generate_random_audit_log().dict()
-    return await process_audit_logs(es, elastic_index_name, [random_log])
+    return await process_audit_logs(es, cast(str, elastic_index_name), [random_log])
 
 
 @app.post("/search")
