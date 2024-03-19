@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any, Dict, List, Optional, Union
 
@@ -102,7 +103,7 @@ async def search_audit_log_entries(
 
         return SearchResponse(hits=len(hits), logs=audit_logs)
     except Exception as e:
-        logger.error(e)
+        logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
 
 

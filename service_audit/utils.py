@@ -1,5 +1,6 @@
 import ipaddress
 import logging
+import traceback
 from typing import Any, Dict, List
 
 from elasticsearch import helpers
@@ -200,5 +201,5 @@ async def process_audit_logs(
             failed_items=failed_items,
         )
     except ValidationError as e:
-        logger.error(e)
+        logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to process audit logs")
