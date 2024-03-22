@@ -9,6 +9,7 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from service_audit.config_manager import ConfigManager
 from service_audit.models import (
     AuditLogEntry,
     CreateResponse,
@@ -22,18 +23,17 @@ from service_audit.utils import (
     process_audit_logs,
 )
 
-environment = os.getenv("ENVIRONMENT", "development")
-api_dir = os.getenv("API_DIR")
-log_level = (os.getenv("LOG_LEVEL", "")).upper()
-
 elasticsearch_host = os.getenv("ELASTICSEARCH_HOST")
 elastic_index_name = os.getenv("ELASTIC_INDEX_NAME")
-elastic_username = os.getenv("ELASTIC_USERNAME")
-elastic_password = os.getenv("ELASTIC_PASSWORD")
 
-logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, log_level, logging.ERROR))
-logger.addHandler(logging.StreamHandler())
+logging.basicConfig(
+    level=getattr(logging, "INFO", logging.ERROR),
+    format="%(levelname)s:     %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
+logger = logging.getLogger("service_audit")
+
 
 # Initialize the Elasticsearch client and raise an error if the host is not set
 # as Elasticsearch is mandatory for the service to work.
@@ -58,7 +58,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
         _ : Just a placeholder.
     """
     logger.info("Audit log API starting up")
-    # Do something here...
+    ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
     yield
     logger.info("Audit log API shutting down")
     # Do something here...

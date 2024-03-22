@@ -1,8 +1,6 @@
 from typing import Dict, List, Optional, Union
 
-from pydantic import field_validator
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SearchParams(BaseModel):

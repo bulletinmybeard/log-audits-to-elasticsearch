@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: docker/service-audit/Dockerfile
     environment:
-      - API_PORT=8000
+      - CONFIG_FILE_PATH=/app/config.yaml
     restart: unless-stopped
     volumes:
-      - "./:/app"
+      - ./:/app
     depends_on:
       - elasticsearch
       - kibana

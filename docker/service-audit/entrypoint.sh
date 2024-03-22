@@ -187,11 +187,6 @@ poetry run uvicorn service_audit.main:app \
     --log-level "$LOG_LEVEL" \
     --reload
 
-#poetry run gunicorn service_audit.main:app \
-#  -k uvicorn.workers.UvicornWorker \
-#  -w 4 \
-#  --bind 0.0.0.0:8000 \
-#  --log-level info
-#  --reload
+#cd /app && poetry run start-app
 
 exec "$@"

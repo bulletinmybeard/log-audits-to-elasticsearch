@@ -1,0 +1,21 @@
+elasticsearch:
+  url: http://elasticsearch:9200
+  index_name: audit_log
+  username:
+  password:
+
+kibana:
+  url: http://kibana:5601
+
+api:
+  port: 8080
+  host: 0.0.0.0
+  key: ""
+
+cors:
+  allowed_origins:
+    - *
+  allowed_methods:
+    - *
+  allowed_headers:
+    - *
