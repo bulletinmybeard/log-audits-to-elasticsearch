@@ -42,8 +42,10 @@ def update_version_in_file(file_path: str, current_version: str, new_version: st
     with open(file_path, 'r') as file:
         content = file.read()
 
-    # Check if the current version is to find in the file.
-    if current_version not in content:
+    version_pattern = re.compile(r'(__version__\s*=\s*|version\s*=\s*)["\']' + re.escape(current_version) + '["\']')
+
+    # Check if the current version is in the file.
+    if not version_pattern.search(content):
         error_messages.append(f"Error: current version '{current_version}' not found in '{file_path}'")
         yield
         return
@@ -52,7 +54,7 @@ def update_version_in_file(file_path: str, current_version: str, new_version: st
         # Write the updated content back to the file.
         with open(file_path, 'w') as file:
             # Replace the current version with the new version.
-            file.write(content.replace(current_version, new_version))
+            file.write(version_pattern.sub(r'\g<1>"' + new_version + '"', content))
     except Exception as e:
         error_messages.append(f"Error: {e}")
         yield
