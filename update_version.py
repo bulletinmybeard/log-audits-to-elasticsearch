@@ -1,23 +1,52 @@
+import logging
 import re
+import subprocess
 import sys
 from contextlib import contextmanager
 from typing import List
 
 import toml
 
+logging.basicConfig(
+    level=getattr(logging, "INFO", logging.ERROR),
+    format="%(levelname)s:     %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+
+logger = logging.getLogger(__name__)
+
+
+def poetry_lock_no_update():
+    try:
+        result = subprocess.run(
+            ["poetry", "lock", "--no-update"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        logger.info("Poetry lock updated.")
+        logger.info(result.stdout)
+    except subprocess.CalledProcessError as e:
+        logger.error("Error running poetry lock:", e)
+        logger.error(e.stderr)
+
 
 def get_current_version() -> str:
+    file_path = "pyproject.toml"
     try:
-        pyproject_data = toml.load("pyproject.toml")
+        pyproject_data = toml.load(file_path)
         current_version = pyproject_data["tool"]["poetry"]["version"]
         return current_version
-    except (KeyError, FileNotFoundError) as e:
-        print(f"Error loading current version from pyproject.toml: {e}")
+    except FileNotFoundError:
+        logger.error(f"{file_path} not found")
+        sys.exit(1)
+    except KeyError as e:
+        logger.error(f"Error loading {file_path}: {e}")
         sys.exit(1)
 
 
 if len(sys.argv) != 2:
-    print("Usage: python update_version.py <new_version>")
+    logger.warning("Usage: python update_version.py <new_version>")
     sys.exit(1)
 
 arg_current_version = get_current_version()
@@ -27,14 +56,14 @@ semver_regex = r"^\d+\.\d+\.\d+$"
 
 # Check if both versions match the Semantic Versioning pattern.
 if not re.match(semver_regex, arg_current_version):
-    print(
+    logger.error(
         f"Error: Current version '{arg_current_version}' "
         f"does not match the Semantic Versioning pattern."
     )
     sys.exit(1)
 
 if not re.match(semver_regex, arg_new_version):
-    print(
+    logger.error(
         f"Error: New version '{arg_new_version}' "
         f"does not match the Semantic Versioning pattern."
     )
@@ -42,15 +71,16 @@ if not re.match(semver_regex, arg_new_version):
 
 # Abort if both versions are identical.
 if arg_current_version == arg_new_version:
-    print(
-        f"Error: New version '{arg_new_version}' equals the current version "
-        f"'{arg_current_version}' (nothing to do here)."
+    logger.error(
+        f"Error: New version '{arg_new_version}' is the same as the current version "
+        f"'{arg_current_version}' (nothing to do here...bye!)."
     )
     sys.exit(1)
 
 # File paths where the version numbers should be updated.
 file_path_list = [
     "service_audit/__init__.py",
+    "pyproject.toml",
     "service_audit/main.py",
 ]
 
@@ -89,7 +119,7 @@ def update_version_in_file(
         yield
         return
 
-    print(f"Updated version in {file_path} to {new_version}")
+    logger.info(f"Updated version in {file_path} to {new_version}")
     yield
 
 
@@ -102,8 +132,10 @@ def update_versions(
 
     if error_messages:
         for error in error_messages:
-            print(error)
+            logger.error(error)
         sys.exit(1)
+    else:
+        poetry_lock_no_update()
 
 
 # Update the versions.
