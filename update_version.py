@@ -1,14 +1,26 @@
 import sys
 import re
+import toml
 from contextlib import contextmanager
 from typing import List
 
-if len(sys.argv) != 3:
-    print("Usage: python update_version.py <current_version> <new_version>")
+
+def get_current_version() -> str:
+    try:
+        pyproject_data = toml.load('pyproject.toml')
+        current_version = pyproject_data['tool']['poetry']['version']
+        return current_version
+    except (KeyError, FileNotFoundError) as e:
+        print(f"Error loading current version from pyproject.toml: {e}")
+        sys.exit(1)
+
+
+if len(sys.argv) != 2:
+    print("Usage: python update_version.py <new_version>")
     sys.exit(1)
 
-arg_current_version = str(sys.argv[1])
-arg_new_version = str(sys.argv[2])
+arg_current_version = get_current_version()
+arg_new_version = str(sys.argv[1])
 
 semver_regex = r'^\d+\.\d+\.\d+$'
 
@@ -28,12 +40,15 @@ if arg_current_version == arg_new_version:
 
 # File paths where the version numbers should be updated.
 file_path_list = [
-    'pyproject.toml',
     'service_audit/__init__.py',
     'service_audit/main.py',
 ]
 
 error_messages = []
+
+#
+# @contextmanager
+# def get_current_version(file_path: str, current_version: str, new_version: str) -> None:
 
 
 @contextmanager
