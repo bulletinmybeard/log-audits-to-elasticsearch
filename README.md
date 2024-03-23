@@ -233,6 +233,14 @@ poetry run coverage run -m pytest -s
 poetry run coverage run -m pytest -s -vv
 ```
 
+## Python Update Script
+This script is used to update the application version in multiple files. The script can be called like this:
+```bash
+python update_version.py 0.5.0 0.6.0
+```
+
+```bash
+
 ## TODO
 - [ ] Finalize the README and documentation
 - [ ] Finalize the audit log search filters (`/search`)
