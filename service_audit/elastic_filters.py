@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
 from fastapi import HTTPException
 
-from service_audit.models import ResponseLogEntry, SearchParams
+from service_audit.models import SearchParams
 
 logger = logging.getLogger("service_audit")
 
@@ -58,7 +58,7 @@ class QueryFilterElasticsearch(Search):
             )
 
         if params.aggregations:
-            # s.aggs.bucket('by_sn', 'terms', field='event_name', order={'avg_action': 'desc'}).metric('avg_action', 'avg', field='action')
+            # s.aggs.bucket('by_sn', 'terms', field='event_name', order={'avg_action': 'desc'}).metric('avg_action', 'avg', field='action') # noqa E501
             for bucket, field in params.aggregations.items():
                 if isinstance(field, str):
                     s.aggs.bucket(bucket, A("terms", field=field))
@@ -67,7 +67,8 @@ class QueryFilterElasticsearch(Search):
                 pass
 
         # Set the maximum number of documents to return and ensure that `response.hits.total.value`
-        # consists of the total number of documents, which is typically limited to 10.000 by default.
+        # consists of the total number of documents,
+        # which is typically limited to 10.000 by default.
         s = s.extra(from_=0, size=params.max_results, track_total_hits=True)
 
         # Sort per default by `timestamp` in descending order.

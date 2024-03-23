@@ -28,20 +28,23 @@ semver_regex = r"^\d+\.\d+\.\d+$"
 # Check if both versions match the Semantic Versioning pattern.
 if not re.match(semver_regex, arg_current_version):
     print(
-        f"Error: Current version '{arg_current_version}' does not match the Semantic Versioning pattern."
+        f"Error: Current version '{arg_current_version}' "
+        f"does not match the Semantic Versioning pattern."
     )
     sys.exit(1)
 
 if not re.match(semver_regex, arg_new_version):
     print(
-        f"Error: New version '{arg_new_version}' does not match the Semantic Versioning pattern."
+        f"Error: New version '{arg_new_version}' "
+        f"does not match the Semantic Versioning pattern."
     )
     sys.exit(1)
 
 # Abort if both versions are identical.
 if arg_current_version == arg_new_version:
     print(
-        f"Error: New version '{arg_new_version}' equals the current version '{arg_current_version}' (nothing to do here)."
+        f"Error: New version '{arg_new_version}' equals the current version "
+        f"'{arg_current_version}' (nothing to do here)."
     )
     sys.exit(1)
 

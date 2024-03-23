@@ -82,14 +82,15 @@ class SearchParams(BaseModel):
         # Conditional validation for including or excluding ES document fields.
         if v.exclude_fields is not None and v.include_fields is not None:
             raise ValueError(
-                "Cannot specify both 'include_fields' and 'exclude_fields'. Choose either one of them."
+                "Cannot specify both 'include_fields' "
+                "and 'exclude_fields'. Choose either one of them."
             )
         elif v.exclude_fields is None and (
-            v.include_fields is not None and len(v.include_fields) is 0
+            v.include_fields is not None and len(v.include_fields) == 0
         ):
             raise ValueError("'include_fields' does not contain fields to include.")
         elif v.include_fields is None and (
-            v.exclude_fields is not None and len(v.exclude_fields) is 0
+            v.exclude_fields is not None and len(v.exclude_fields) == 0
         ):
             raise ValueError("'exclude_fields' does not contain fields to include.")
 
