@@ -1,4 +1,4 @@
-import logging
+from service_audit.custom_logger import get_logger
 import traceback
 from typing import Any, Dict
 
@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 from service_audit.models import SearchParams
 
-logger = logging.getLogger("service_audit")
+logger = get_logger('audit_service')
 
 
 class QueryFilterElasticsearch(Search):

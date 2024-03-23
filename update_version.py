@@ -1,4 +1,4 @@
-import logging
+from service_audit.custom_logger import get_logger
 import re
 import subprocess
 import sys
@@ -7,13 +7,7 @@ from typing import List
 
 import toml
 
-logging.basicConfig(
-    level=getattr(logging, "INFO", logging.ERROR),
-    format="%(levelname)s:     %(message)s",
-    handlers=[logging.StreamHandler()],
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger('audit_service')
 
 
 def poetry_lock_no_update():

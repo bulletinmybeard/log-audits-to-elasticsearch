@@ -1,5 +1,5 @@
+from service_audit.custom_logger import get_logger
 import ipaddress
-import logging
 import traceback
 from typing import Any, Dict, List
 
@@ -19,7 +19,7 @@ from service_audit.models import (
 
 fake = Faker()
 
-logger = logging.getLogger(__name__)
+logger = get_logger('audit_service')
 
 
 def anonymize_ip_address(ip_address: str) -> str:

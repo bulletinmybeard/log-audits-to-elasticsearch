@@ -1,4 +1,4 @@
-import logging
+from service_audit.custom_logger import get_logger
 import os
 from typing import Any, Optional
 
@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from service_audit.models import BaseConfig
 
-logger = logging.getLogger("service_audit")
+logger = get_logger('audit_service')
 
 
 class ConfigManager:

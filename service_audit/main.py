@@ -1,4 +1,4 @@
-import logging
+from service_audit.custom_logger import get_logger
 import os
 import traceback
 from contextlib import asynccontextmanager
@@ -26,13 +26,7 @@ elasticsearch_url = os.getenv("ELASTICSEARCH_HOST")
 elastic_index_name = os.getenv("ELASTIC_INDEX_NAME")
 
 
-logging.basicConfig(
-    level=getattr(logging, "INFO", logging.ERROR),
-    format="%(levelname)s:     %(message)s",
-    handlers=[logging.StreamHandler()],
-)
-
-logger = logging.getLogger("service_audit")
+logger = get_logger('audit_service')
 
 
 # Initialize the Elasticsearch client and raise an error if the host is not set
