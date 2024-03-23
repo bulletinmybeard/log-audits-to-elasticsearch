@@ -1,12 +1,7 @@
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import (
-    BaseModel,
-    Field,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 logger = logging.getLogger("service_audit")
 
