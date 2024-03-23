@@ -38,7 +38,9 @@ class ResponseLogEntry(BaseModel):
 
 class SearchResponse(BaseModel):
     hits: int
-    logs: List[ResponseLogEntry]
+    # docs: List[ResponseLogEntry]
+    docs: List[Any]
+    aggs: List[Any]
 
 
 class CreateResponse(BaseModel):

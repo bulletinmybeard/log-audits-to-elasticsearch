@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Any
 
 import yaml
 from pydantic import ValidationError
@@ -14,7 +14,7 @@ class ConfigManager:
     _config: Optional[BaseConfig] = None
 
     @classmethod
-    def load_config(cls, config_file_path: str) -> None:
+    def load_config(cls, config_file_path: str) -> Any:
         """
         Load and validate configuration from a YAML file.
         """
@@ -27,6 +27,7 @@ class ConfigManager:
         try:
             cls._config = BaseConfig(**raw_config)
             logger.info("Configuration loaded successfully.")
+            return cls._config
         except ValidationError as e:
             raise ValueError(f"Invalid configuration format: {e}")
 

@@ -4,27 +4,27 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
 
-from elasticsearch import Elasticsearch
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from service_audit.config_manager import ConfigManager
-from service_audit.models import (
-    AuditLogEntry,
-    CreateResponse,
-    ResponseLogEntry,
-    SearchResponse,
-)
+from service_audit.elastic import CustomElasticsearch
+from service_audit.elastic_filters import QueryFilterElasticsearch
+from service_audit.models import AuditLogEntry, CreateResponse, SearchResponse
 from service_audit.utils import (
     SearchParams,
-    build_query_body,
     generate_random_audit_log,
     process_audit_logs,
 )
 
-elasticsearch_host = os.getenv("ELASTICSEARCH_HOST")
+# config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
+# elasticsearch_url = config.elasticsearch.url
+# elastic_index_name = config.elasticsearch.index_name
+
+elasticsearch_url = os.getenv("ELASTICSEARCH_HOST")
 elastic_index_name = os.getenv("ELASTIC_INDEX_NAME")
+
 
 logging.basicConfig(
     level=getattr(logging, "INFO", logging.ERROR),
@@ -37,9 +37,9 @@ logger = logging.getLogger("service_audit")
 
 # Initialize the Elasticsearch client and raise an error if the host is not set
 # as Elasticsearch is mandatory for the service to work.
-if elasticsearch_host is not None:
-    es = Elasticsearch(
-        hosts=[elasticsearch_host],
+if elasticsearch_url is not None:
+    elastic = CustomElasticsearch(
+        hosts=[elasticsearch_url],
         # http_auth=(elastic_username, elastic_password)
     )
 else:
@@ -58,7 +58,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
         _ : Just a placeholder.
     """
     logger.info("Audit log API starting up")
-    ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
+    elastic.ensure_ready(elastic_index_name)
     yield
     logger.info("Audit log API shutting down")
     # Do something here...
@@ -66,11 +66,11 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     debug=True,
-    title="Audit Log Service",
+    title="Audit Logging Service",
     summary="Service for logging security incidents and other audit events",
     description="This service provides an API for "
     "logging security incidents and other audit events.",
-    version="0.1.0",
+    version="0.5.0",
     redirect_slashes=True,
     lifespan=lifespan,
 )
@@ -129,7 +129,9 @@ async def create_audit_log(
     """
     log_entries = [audit_log] if not isinstance(audit_log, list) else audit_log
     validated_logs = [entry.dict() for entry in log_entries]
-    return await process_audit_logs(es, cast(str, elastic_index_name), validated_logs)
+    return await process_audit_logs(
+        elastic, cast(str, elastic_index_name), validated_logs
+    )
 
 
 @app.post("/create-random")
@@ -144,11 +146,13 @@ async def create_random_audit_log() -> CreateResponse:
         HTTPException
     """
     random_log = generate_random_audit_log().dict()
-    return await process_audit_logs(es, cast(str, elastic_index_name), [random_log])
+    return await process_audit_logs(
+        elastic, cast(str, elastic_index_name), [random_log]
+    )
 
 
 @app.post("/search")
-async def search_audit_log_entries(
+def search_audit_log_entries(
     params: Optional[SearchParams] = Body(default=None),
 ) -> SearchResponse:
     """
@@ -167,12 +171,13 @@ async def search_audit_log_entries(
         HTTPException
     """
     try:
-        query_body = build_query_body(params or SearchParams())  # type: ignore
-        result = es.search(index=f"{elastic_index_name}*", body=query_body)
-        hits = result["hits"]["hits"]
-        audit_logs = [ResponseLogEntry(**log["_source"]) for log in hits]
-
-        return SearchResponse(hits=len(hits), logs=audit_logs)
+        elastic_filters = QueryFilterElasticsearch(
+            using=elastic, index=elastic_index_name
+        )
+        result = elastic_filters.apply_filters(params or SearchParams())
+        return SearchResponse(
+            hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
+        )
     except Exception as e:
         logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
@@ -189,9 +194,8 @@ async def health_check() -> Dict[str, str]:
     Raises:
         HTTPException
     """
-    if es.ping():
+    try:
+        elastic.check_health()
         return {"status": "OK"}
-    else:
-        raise HTTPException(
-            status_code=500, detail="Elasticsearch server is not reachable"
-        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

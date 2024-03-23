@@ -22,98 +22,6 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-def build_query_body(params: SearchParams) -> Dict[str, Any]:
-    query_body: Dict[str, Any] = {
-        "query": {"bool": {"must": [], "must_not": [], "should": []}},
-        "sort": [{params.sort_by: {"order": params.sort_order}}],
-        "size": params.max_results,
-    }
-
-    if params.text_search_fields:
-        for field, query in params.text_search_fields.items():
-            query_body["query"]["bool"]["must"].append({"match": {field: query}})
-
-    if params.search_query:
-        query_body["query"]["bool"]["must"].append(
-            {"query_string": {"query": params.search_query}}
-        )
-
-    # Hmm...
-    # if params.search_query and params.text_search_fields:
-    #     must_queries.append({
-    #         "multi_match": {
-    #             "query": params.search_query,
-    #             "fields": params.text_search_fields
-    #         }
-    #     })
-
-    if params.date_range_start and params.date_range_end:
-        query_body["query"]["bool"]["must"].append(
-            {
-                "range": {
-                    "timestamp": {
-                        "gte": params.date_range_start,
-                        "lte": params.date_range_end,
-                    }
-                }
-            }
-        )
-
-    if params.exact_matches:
-        for field, value in params.exact_matches.items():
-            if isinstance(value, list):
-                query_body["query"]["bool"]["must"].append({"terms": {field: value}})
-            else:
-                query_body["query"]["bool"]["must"].append({"term": {field: value}})
-
-    if params.fields != "all":
-        query_body["_source"] = params.fields
-
-    if params.exclusions:
-        for field, value in params.exclusions.items():
-            if isinstance(value, list):
-                query_body["query"]["bool"]["must_not"].append(
-                    {"terms": {field: value}}
-                )
-            else:
-                query_body["query"]["bool"]["must_not"].append({"term": {field: value}})
-
-    # # Include nested fields logic
-    # if params.include_nested:
-    #     query_body["_source"] = {
-    #         "includes": ["*", "actor.*", "resource.*", "server_details.*"]
-    #     }
-    #     ## Add a generic nested query structure; specifics would depend on input
-    #     # nested_queries: List[Any] = [{
-    #     #     "nested": {
-    #     #         "path": "actor",
-    #     #         "query": {
-    #     #             "bool": {
-    #     #                 "must": [
-    #     #                     # Example condition - match a specific actor type
-    #     #                     {"match": {"actor.type": "user"}}
-    #     #                 ]
-    #     #             }
-    #     #         }
-    #     #     }
-    #     # }]
-    #     #
-    #     # # Example: Searching within the actor nested object
-    #     #
-    #     # # Incorporate nested queries into the main query body
-    #     # if not query_body["query"]["bool"].get("must"):
-    #     #     query_body["query"]["bool"]["must"] = []
-    #     # query_body["query"]["bool"]["must"].extend(nested_queries)
-
-    if params.min_should_match:
-        query_body["query"]["bool"]["minimum_should_match"] = params.min_should_match
-
-    if params.aggregations:
-        query_body["aggs"] = params.aggregations
-
-    return query_body
-
-
 def anonymize_ip_address(ip_address: str) -> str:
     """
     Anonymizes an IP address by replacing the last segments with zeros.
@@ -234,7 +142,7 @@ async def process_audit_logs(
     """
     try:
         operations = create_bulk_operations(elastic_index_name, log_entries)
-        success_count, failed = helpers.bulk(es, operations)
+        success_count, failed = helpers.bulk(elastic, operations)
         failed_count = len(failed) if isinstance(failed, list) else failed
         failed_items = failed if isinstance(failed, list) else []
 
