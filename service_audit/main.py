@@ -1,4 +1,3 @@
-from service_audit.custom_logger import get_logger
 import os
 import traceback
 from contextlib import asynccontextmanager
@@ -9,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from service_audit.config_manager import ConfigManager
+from service_audit.custom_logger import get_logger
 from service_audit.elastic import CustomElasticsearch
 from service_audit.elastic_filters import QueryFilterElasticsearch
 from service_audit.models import AuditLogEntry, CreateResponse, SearchResponse
@@ -26,7 +26,7 @@ elasticsearch_url = os.getenv("ELASTICSEARCH_HOST")
 elastic_index_name = os.getenv("ELASTIC_INDEX_NAME")
 
 
-logger = get_logger('audit_service')
+logger = get_logger("audit_service")
 
 
 # Initialize the Elasticsearch client and raise an error if the host is not set

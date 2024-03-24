@@ -1,4 +1,3 @@
-from service_audit.custom_logger import get_logger
 import ipaddress
 import traceback
 from typing import Any, Dict, List
@@ -8,6 +7,7 @@ from faker import Faker
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from service_audit.custom_logger import get_logger
 from service_audit.models import (
     ActorModel,
     AuditLogEntry,
@@ -19,7 +19,7 @@ from service_audit.models import (
 
 fake = Faker()
 
-logger = get_logger('audit_service')
+logger = get_logger("audit_service")
 
 
 def anonymize_ip_address(ip_address: str) -> str:

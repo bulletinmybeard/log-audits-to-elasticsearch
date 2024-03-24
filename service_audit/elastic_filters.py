@@ -1,4 +1,3 @@
-from service_audit.custom_logger import get_logger
 import traceback
 from typing import Any, Dict
 
@@ -6,9 +5,10 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
 from fastapi import HTTPException
 
+from service_audit.custom_logger import get_logger
 from service_audit.models import SearchParams
 
-logger = get_logger('audit_service')
+logger = get_logger("audit_service")
 
 
 class QueryFilterElasticsearch(Search):
