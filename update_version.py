@@ -2,7 +2,7 @@ import re
 import subprocess
 import sys
 from contextlib import contextmanager
-from typing import List
+from typing import Generator, List
 
 import toml
 
@@ -11,7 +11,7 @@ from service_audit.custom_logger import get_logger
 logger = get_logger("audit_service")
 
 
-def poetry_lock_no_update():
+def poetry_lock_no_update() -> None:
     try:
         result = subprocess.run(
             ["poetry", "lock", "--no-update"],
@@ -85,7 +85,7 @@ error_messages = []
 @contextmanager
 def update_version_in_file(
     file_path: str, current_version: str, new_version: str
-) -> None:
+) -> Generator[None, None, None]:
     # Read the file.
     with open(file_path, "r") as file:
         content = file.read()

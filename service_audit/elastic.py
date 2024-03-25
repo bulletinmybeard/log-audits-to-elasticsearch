@@ -1,3 +1,5 @@
+from typing import Any
+
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (
     AuthenticationException,
@@ -9,14 +11,12 @@ from elasticsearch.exceptions import (
 
 
 class CustomElasticsearch(Elasticsearch):
-    def __init__(self, hosts=None, **kwargs):
+    def __init__(self, hosts=None, **kwargs) -> None:
         # Store hosts for potential re-instantiation by helpers
         self._hosts = hosts or ["localhost"]
         super().__init__(hosts=self._hosts, **kwargs)
 
-    # Optional: Override the options() method if needed to ensure correct client re-instantiation
-    def options(self, **kwargs):
-        # Return a new instance of the custom client with the same hosts and updated kwargs
+    def options(self, **kwargs) -> Any:
         return type(self)(hosts=self._hosts, **kwargs)
 
     def check_health(self) -> None:
@@ -44,7 +44,6 @@ class CustomElasticsearch(Elasticsearch):
                 raise NotFoundError(
                     meta={"index": index_name},
                     body=f"[Elastic] index '{index_name}' does not exist",
-                    # message=f"[Elastic] index '{index_name}' does not exist",
                 )
         except NotFoundError as e:
             raise e
@@ -55,7 +54,7 @@ class CustomElasticsearch(Elasticsearch):
         except AuthenticationException as e:
             raise ValueError(f"[Elastic] Authentication error: {e}")
 
-    def ensure_ready(self, index_name: str):
+    def ensure_ready(self, index_name: str) -> None:
         """
         Ensures Elasticsearch service is reachable and the specified index exists.
         """
