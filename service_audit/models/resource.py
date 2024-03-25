@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class ResourceModel(BaseModel):
+class ResourceDetails(BaseModel):
     type: str = Field(
         ...,
         title="Resource Type",

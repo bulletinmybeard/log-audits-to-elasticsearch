@@ -19,17 +19,17 @@ class MaxResultsMixin(BaseModel):
     )
 
 
-class SortOrder(str, Enum):
+class SortOrderEnum(str, Enum):
     ASC = "asc"
     DESC = "desc"
 
 
-class FieldsMode(str, Enum):
+class FieldSelectionMode(str, Enum):
     INCLUDE = "include"
     EXCLUDE = "exclude"
 
 
-class FilterType(str, Enum):
+class FilterTypeEnum(str, Enum):
     EXACT = "exact"
     TEXT_SEARCH = "text_search"
     RANGE = "range"
@@ -39,7 +39,7 @@ class FilterType(str, Enum):
     NESTED = "nested"
 
 
-class FieldName(str, Enum):
+class FieldIdentifierEnum(str, Enum):
     TIMESTAMP = "timestamp"
     EVENT_NAME = "event_name"
     ACTOR = "actor"
@@ -62,7 +62,7 @@ class FieldName(str, Enum):
     SERVER_DETAILS_IP_ADDRESS = "server_details.ip_address"
 
 
-class AggregationType(str, Enum):
+class AggregationTypeEnum(str, Enum):
     TERMS = "terms"
     VALUE_COUNT = "value_count"
     AVG = "avg"
@@ -70,12 +70,12 @@ class AggregationType(str, Enum):
     DATE_HISTOGRAM = "date_histogram"
 
 
-class SearchParamFilters(BaseModel):
-    field: FieldName = Field(
+class SearchFilterParams(BaseModel):
+    field: FieldIdentifierEnum = Field(
         default=None,
         description="",
     )
-    type: FilterType = Field(
+    type: FilterTypeEnum = Field(
         default=None,
         description="",
     )
@@ -98,17 +98,17 @@ class SearchParamFilters(BaseModel):
 
     @model_validator(mode="after")
     def validate_filter_fields(cls, v):
-        if v.type == FilterType.RANGE:
+        if v.type == FilterTypeEnum.RANGE:
             # Check if the field is a date and validate the 'gte' and 'lte' values.
-            if v.field == FieldName.TIMESTAMP:
+            if v.field == FieldIdentifierEnum.TIMESTAMP:
                 if not all((validate_date(v.gte), validate_date(v.lte))):
                     raise ValueError(
                         f"For a date 'range' filter, 'gte' and 'lte' must be valid dates (YYYY-MM-DDTHH:MM:SSZ)."  # noqa
                     )
             # Check if the field is an IP address and validate the 'gte' and 'lte' values.
             if v.field in [
-                FieldName.ACTOR_IP_ADDRESS,
-                FieldName.SERVER_DETAILS_IP_ADDRESS,
+                FieldIdentifierEnum.ACTOR_IP_ADDRESS,
+                FieldIdentifierEnum.SERVER_DETAILS_IP_ADDRESS,
             ]:
                 if not all(
                     (is_valid_ip_v4_address(v.gte), is_valid_ip_v4_address(v.lte))
@@ -116,7 +116,7 @@ class SearchParamFilters(BaseModel):
                     raise ValueError(
                         f"For an IP address range filter, 'gte' and 'lte' must be valid IPv4 addresses."  # noqa
                     )
-        elif v.type == FilterType.MISSING:
+        elif v.type == FilterTypeEnum.MISSING:
             pass
 
         # TODO: Add more checks for other types as needed!!!
@@ -124,62 +124,62 @@ class SearchParamFilters(BaseModel):
 
     @field_validator("field")
     def check_field_is_valid(cls, v):
-        if v not in FieldName:
-            raise ValueError(f"field must be one of {list(FieldName)}")
+        if v not in FieldIdentifierEnum:
+            raise ValueError(f"field must be one of {list(FieldIdentifierEnum)}")
         return v
 
     @field_validator("type")
     def check_type_is_valid(cls, v):
-        if v not in FilterType:
-            raise ValueError(f"type must be one of {list(FilterType)}")
+        if v not in FilterTypeEnum:
+            raise ValueError(f"type must be one of {list(FilterTypeEnum)}")
         return v
 
 
-class AggregationFilter(BaseModel):
+class AggregationFilterParams(BaseModel):
     range: Optional[Dict[str, Dict[str, str]]]
 
 
-class SubAggregation(BaseModel):
-    type: AggregationType
-    field: FieldName
+class SubAggregationConfig(BaseModel):
+    type: AggregationTypeEnum
+    field: FieldIdentifierEnum
 
 
-class AggregationRequest(MaxResultsMixin, BaseModel):
-    type: AggregationType = Field(..., description="Specifies the type of aggregation.")
-    field: FieldName = Field(..., description="The field to aggregate on.")
-    sub_aggregations: Optional[List[SubAggregation]] = Field(
+class AggregationSetup(MaxResultsMixin, BaseModel):
+    type: AggregationTypeEnum = Field(..., description="Specifies the type of aggregation.")
+    field: FieldIdentifierEnum = Field(..., description="The field to aggregate on.")
+    sub_aggregations: Optional[List[SubAggregationConfig]] = Field(
         default=None, description="List of sub-aggregations to apply."
     )
     interval: Optional[str] = Field(
         default=None,
         description="Interval for date histogram aggregations, if applicable.",
     )
-    filter: Optional[AggregationFilter] = Field(
+    filter: Optional[AggregationFilterParams] = Field(
         default=None, description="Filter to apply to the aggregation."
     )
 
 
 class SearchParamsV2(MaxResultsMixin, BaseModel):
-    fields: Optional[List[FieldName]] = Field(
+    fields: Optional[List[FieldIdentifierEnum]] = Field(
         default=None,
         description="Fields to include in results. Empty includes all fields.",
     )
-    fields_mode: Optional[FieldsMode] = Field(
-        default=FieldsMode.INCLUDE,
+    fields_mode: Optional[FieldSelectionMode] = Field(
+        default=FieldSelectionMode.INCLUDE,
         description="Determines if `fields` are included or excluded. INCLUDE or EXCLUDE.",
     )
-    sort_by: Optional[FieldName] = Field(
+    sort_by: Optional[FieldIdentifierEnum] = Field(
         default="timestamp", description="Field to sort the search results by."
     )
-    sort_order: Optional[SortOrder] = Field(
+    sort_order: Optional[SortOrderEnum] = Field(
         default="asc",
         description="Sort order of results: 'asc' for ascending, 'desc' for descending.",
     )
-    filters: Optional[List[SearchParamFilters]] = Field(
+    filters: Optional[List[SearchFilterParams]] = Field(
         default=None,
         description="Filters to apply for refined search results.",
     )
-    aggs: Optional[Union[List[AggregationRequest], Dict[str, Any]]] = Field(
+    aggs: Optional[Union[List[AggregationSetup], Dict[str, Any]]] = Field(
         default=None,
         description="Aggregations to apply for data summarization/analysis.",
     )

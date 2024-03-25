@@ -6,11 +6,11 @@ from fastapi import HTTPException
 
 from service_audit.custom_logger import get_logger
 from service_audit.models import (
-    AggregationRequest,
-    AggregationType,
-    FieldName,
-    FilterType,
-    SearchParamFilters,
+    AggregationSetup,
+    AggregationTypeEnum,
+    FieldIdentifierEnum,
+    FilterTypeEnum,
+    SearchFilterParams,
     SearchParamsV2,
 )
 
@@ -57,7 +57,7 @@ class ElasticSearchQueryBuilder(Search):
         }
 
     @staticmethod
-    def process_aggregations(s: Search, aggs: Dict[str, AggregationRequest]) -> Search:
+    def process_aggregations(s: Search, aggs: Dict[str, AggregationSetup]) -> Search:
         print("[Process::aggregations]", aggs)
 
         # s.aggs.bucket('total_docs', A('value_count', field='_id'))
@@ -99,12 +99,12 @@ class ElasticSearchQueryBuilder(Search):
             field = values.get("field")
             agg_type = values.get("type")
 
-            if agg_type in (AggregationType.TERMS, AggregationType.VALUE_COUNT):
+            if agg_type in (AggregationTypeEnum.TERMS, AggregationTypeEnum.VALUE_COUNT):
                 s.aggs.bucket(agg_name, A(agg_type, field=field))
-            if agg_type == AggregationType.NESTED:
+            if agg_type == AggregationTypeEnum.NESTED:
                 for value in values.get("sub_aggregations"):
                     path = values.get("path")
-                    nested_agg = A(AggregationType.NESTED, path=path)
+                    nested_agg = A(AggregationTypeEnum.NESTED, path=path)
                     terms_agg = A(
                         value.get("type"),
                         field=value.get("field"),
@@ -119,25 +119,25 @@ class ElasticSearchQueryBuilder(Search):
         return s
 
     @staticmethod
-    def process_filters(s: Search, filters: List[SearchParamFilters]):
+    def process_filters(s: Search, filters: List[SearchFilterParams]):
         """Processes the filters applied to the search query."""
         for f in filters:
-            if f.type == FilterType.RANGE:
-                if f.field == FieldName.TIMESTAMP:
+            if f.type == FilterTypeEnum.RANGE:
+                if f.field == FieldIdentifierEnum.TIMESTAMP:
                     s = s.query("range", timestamp={"gte": f.gte, "lte": f.lte})
                 else:
                     kwargs = {f"{f.field}": {"gte": f.gte, "lte": f.lte}}
                     s.query("range", **kwargs)
-            elif f.type == FilterType.EXACT:
-                if f.field == FieldName.TIMESTAMP:
+            elif f.type == FilterTypeEnum.EXACT:
+                if f.field == FieldIdentifierEnum.TIMESTAMP:
                     s = s.query("term", timestamp=f.value)
                 else:
                     s = s.query("term", **{f.field: f.value})
-            elif f.type == FilterType.TEXT_SEARCH:
+            elif f.type == FilterTypeEnum.TEXT_SEARCH:
                 s = s.query("multi_match", query=f.values[0], fields=[f.field])
-            elif f.type == FilterType.WILDCARD:
+            elif f.type == FilterTypeEnum.WILDCARD:
                 s = s.query("wildcard", **{f.field: f.value})
-            elif f.type == FilterType.EXISTS:
+            elif f.type == FilterTypeEnum.EXISTS:
                 s = s.query("exists", field=f.field)
         return s
 

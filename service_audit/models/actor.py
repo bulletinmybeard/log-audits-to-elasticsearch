@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class ActorModel(BaseModel):
+class ActorDetails(BaseModel):
     identifier: str = Field(
         ..., title="Identifier", description="Unique identifier of the actor."
     )

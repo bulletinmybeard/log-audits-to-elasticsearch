@@ -11,12 +11,12 @@ from pydantic import ValidationError
 
 from service_audit.custom_logger import get_logger
 from service_audit.models import (
-    ActorModel,
+    ActorDetails,
     AuditLogEntry,
-    CreateResponse,
-    ResourceModel,
+    GenericResponse,
+    ResourceDetails,
+    ServerInfo
 )
-from service_audit.models.server_details import ServerDetailsModel
 
 fake = Faker()
 
@@ -136,7 +136,7 @@ def generate_random_audit_log() -> AuditLogEntry:
         event_name=fake.random_element(
             ["user_login", "data_backup", "file_access", "role_update"]
         ),
-        actor=ActorModel(
+        actor=ActorDetails(
             identifier=fake.random_element(["j.doe", "j.dot", "a.smith", "s.jones"]),
             type=fake.random_element(["user", "system"]),
             ip_address=fake.ipv4(),
@@ -147,7 +147,7 @@ def generate_random_audit_log() -> AuditLogEntry:
         context=fake.random_element(
             ["user_management", "system_backup", "content_delivery", "security"]
         ),
-        resource=ResourceModel(
+        resource=ResourceDetails(
             type=fake.random_element(
                 ["user_account", "database", "cronjob", "system_file"]
             ),
@@ -156,7 +156,7 @@ def generate_random_audit_log() -> AuditLogEntry:
         operation=fake.random_element(["create", "read", "update", "delete"]),
         status=fake.random_element(["success", "failure"]),
         endpoint=fake.uri_path(),
-        server_details=ServerDetailsModel(
+        server_details=ServerInfo(
             hostname=fake.hostname(),
             vm_name=fake.word(),
             ip_address=fake.ipv4(),
@@ -170,7 +170,7 @@ def generate_random_audit_log() -> AuditLogEntry:
 
 async def process_audit_logs(
     elastic: Any, elastic_index_name: str, log_entries: List[Dict]
-) -> CreateResponse:
+) -> GenericResponse:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
 
@@ -191,7 +191,7 @@ async def process_audit_logs(
         failed_count = len(failed) if isinstance(failed, list) else failed
         failed_items = failed if isinstance(failed, list) else []
 
-        return CreateResponse(
+        return GenericResponse(
             status="success",
             success_count=success_count,
             failed_count=failed_count,

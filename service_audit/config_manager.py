@@ -5,13 +5,13 @@ import yaml
 from pydantic import ValidationError
 
 from service_audit.custom_logger import get_logger
-from service_audit.models import BaseConfig
+from service_audit.models import AppConfig
 
 logger = get_logger("audit_service")
 
 
 class ConfigManager:
-    _config: Optional[BaseConfig] = None
+    _config: Optional[AppConfig] = None
 
     @classmethod
     def load_config(cls, config_file_path: str) -> Any:
@@ -25,14 +25,14 @@ class ConfigManager:
             raw_config = yaml.safe_load(f)
 
         try:
-            cls._config = BaseConfig(**raw_config)
+            cls._config = AppConfig(**raw_config)
             logger.info("Configuration loaded successfully.")
             return cls._config
         except ValidationError as e:
             raise ValueError(f"Invalid configuration format: {e}")
 
     @classmethod
-    def get_config(cls) -> BaseConfig:
+    def get_config(cls) -> AppConfig:
         """
         Access the loaded configuration. Ensures configuration is loaded.
         """

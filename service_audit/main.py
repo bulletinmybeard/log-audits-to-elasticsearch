@@ -13,9 +13,9 @@ from service_audit.elastic import CustomElasticsearch
 from service_audit.elastic_filters import ElasticSearchQueryBuilder
 from service_audit.models import (
     AuditLogEntry,
-    CreateResponse,
+    GenericResponse,
     SearchParamsV2,
-    SearchResponse,
+    SearchResults,
 )
 from service_audit.utils import generate_random_audit_log, process_audit_logs
 
@@ -106,7 +106,7 @@ async def validation_exception_handler(
 @app.post("/create")
 async def create_audit_log(
     audit_log: Union[AuditLogEntry, List[AuditLogEntry]] = Body(...)
-) -> CreateResponse:
+) -> GenericResponse:
     """
     Receives an audit log entry or a list of entries, validates them, and processes
     them to be stored in Elasticsearch.
@@ -130,7 +130,7 @@ async def create_audit_log(
 
 
 @app.post("/create-random")
-async def create_random_audit_log() -> CreateResponse:
+async def create_random_audit_log() -> GenericResponse:
     """
     Generates and stores a single random audit log entry.
 
@@ -171,7 +171,7 @@ def search_audit_log_entries(
         )
         result = elastic_filters.process_parameters(params or SearchParamsV2())
 
-        return SearchResponse(
+        return SearchResults(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )
     except Exception as e:

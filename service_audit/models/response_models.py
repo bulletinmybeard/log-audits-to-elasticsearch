@@ -3,47 +3,47 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
-class ResponseActor(BaseModel):
+class ActorDetails(BaseModel):
     identifier: Optional[str]
     type: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
 
 
-class ResponseResource(BaseModel):
+class ResourceDetails(BaseModel):
     type: Optional[str]
     id: Optional[str]
 
 
-class ResponseServerDetails(BaseModel):
+class ServerInfo(BaseModel):
     hostname: Optional[str]
     vm_name: Optional[str]
     ip_address: Optional[str]
 
 
-class ResponseLogEntry(BaseModel):
+class LogEntryDetails(BaseModel):
     timestamp: Optional[str]
     event_name: Optional[str]
-    actor: Optional[ResponseActor]
+    actor: Optional[ActorDetails]
     action: Optional[str]
     comment: Optional[str]
     context: Optional[str]
-    resource: Optional[ResponseResource]
+    resource: Optional[ResourceDetails]
     operation: Optional[str]
     status: Optional[str]
     endpoint: Optional[str]
-    server_details: Optional[ResponseServerDetails]
+    server_details: Optional[ServerInfo]
     meta: Optional[Dict[str, Any]]
 
 
-class SearchResponse(BaseModel):
+class SearchResults(BaseModel):
     hits: int
     # docs: List[ResponseLogEntry]
     docs: List[Any]
     aggs: List[Any]
 
 
-class CreateResponse(BaseModel):
+class GenericResponse(BaseModel):
     status: str
     success_count: int
     failed_count: int

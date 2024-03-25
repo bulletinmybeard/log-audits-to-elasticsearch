@@ -16,7 +16,7 @@ class URLFieldValidatorMixin:
             raise ValueError("URL must start with 'http://' or 'https://'.")
 
 
-class ElasticsearchConfig(BaseModel, URLFieldValidatorMixin):
+class ElasticsearchSettings(BaseModel, URLFieldValidatorMixin):
     url: HttpUrl = Field(
         ...,
         title="Elasticsearch URL",
@@ -35,19 +35,19 @@ class ElasticsearchConfig(BaseModel, URLFieldValidatorMixin):
     )
 
 
-class KibanaConfig(BaseModel, URLFieldValidatorMixin):
+class KibanaSettings(BaseModel, URLFieldValidatorMixin):
     url: HttpUrl = Field(
         ..., title="Kibana URL", description="Kibana URL (e.g., http://kibana:5601)."
     )
 
 
-class APIConfig(BaseModel):
+class APISettings(BaseModel):
     host: str = Field(..., title="API host", description="API host.")
     port: int = Field(..., title="API port", description="API port.")
     key: Optional[str] = Field(..., title="API key", description="API key.")
 
 
-class CORSConfig(BaseModel):
+class CORSOptions(BaseModel):
     allowed_origins: Optional[List[str]] = Field(
         default=["*"],
         title="Allowed Origins",
@@ -65,8 +65,8 @@ class CORSConfig(BaseModel):
     )
 
 
-class BaseConfig(BaseModel):
-    elasticsearch: ElasticsearchConfig
-    kibana: KibanaConfig
-    api: APIConfig
-    cors: CORSConfig
+class AppConfig(BaseModel):
+    elasticsearch: ElasticsearchSettings
+    kibana: KibanaSettings
+    api: APISettings
+    cors: CORSOptions

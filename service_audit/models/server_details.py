@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class ServerDetailsModel(BaseModel):
+class ServerInfo(BaseModel):
     hostname: str = Field(
         ...,
         title="Hostname",

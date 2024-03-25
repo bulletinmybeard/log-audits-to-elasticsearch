@@ -2,9 +2,9 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from service_audit.models.actor import ActorModel
-from service_audit.models.resource import ResourceModel
-from service_audit.models.server_details import ServerDetailsModel
+from service_audit.models.actor import ActorDetails
+from service_audit.models.resource import ResourceDetails
+from service_audit.models.server_details import ServerInfo
 
 
 class AuditLogEntry(BaseModel):
@@ -14,7 +14,7 @@ class AuditLogEntry(BaseModel):
         description="The date and time when the event occurred, in ISO 8601 format.",
     )
     event_name: str = Field(..., title="Event Name", description="Name of the event.")
-    actor: ActorModel = Field(
+    actor: ActorDetails = Field(
         ...,
         title="Actor",
         description="Details about the actor who initiated the event.",
@@ -28,7 +28,7 @@ class AuditLogEntry(BaseModel):
         title="Context",
         description="The operational context in which the event occurred.",
     )
-    resource: ResourceModel = Field(
+    resource: ResourceDetails = Field(
         ...,
         title="Resource",
         description="Details about the resource.",
@@ -42,7 +42,7 @@ class AuditLogEntry(BaseModel):
         title="Endpoint",
         description="The API endpoint or URL accessed, if applicable.",
     )
-    server_details: ServerDetailsModel = Field(
+    server_details: ServerInfo = Field(
         ...,
         title="Server Details",
         description="Details about the server where the event occurred.",
