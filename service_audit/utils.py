@@ -1,5 +1,7 @@
 import ipaddress
+import re
 import traceback
+from datetime import datetime
 from typing import Any, Dict, List
 
 from elasticsearch import helpers
@@ -13,13 +15,39 @@ from service_audit.models import (
     AuditLogEntry,
     CreateResponse,
     ResourceModel,
-    SearchParams,
-    ServerDetailsModel,
 )
+from service_audit.models.server_details import ServerDetailsModel
 
 fake = Faker()
 
 logger = get_logger("audit_service")
+
+# Regular expression to validate date strings in the format "YYYY-MM-DDTHH:MM:SSZ"
+# where everything, except for the year, is optional.
+DATE_FORMAT_REGEX = re.compile(
+    r"""
+    ^(
+        (?P<year>\d{4})  # Year (YYYY)
+        (
+            -(?P<month>\d{2})  # Optional month (MM)
+            (
+                -(?P<day>\d{2})  # Optional day (DD)
+                (
+                    T(?P<hour>\d{2})  # Optional hour (HH)
+                    (
+                        :(?P<minute>\d{2})  # Optional minute (MM)
+                        (
+                            :(?P<second>\d{2})  # Optional second (SS)
+                            (?P<timezone>[+-]\d{2}:\d{2}|Z)?  # Optional Timezone
+                        )?
+                    )?
+                )?
+            )?
+        )?
+    )$
+""",
+    re.VERBOSE,
+)
 
 
 def anonymize_ip_address(ip_address: str) -> str:
@@ -47,6 +75,23 @@ def anonymize_ip_address(ip_address: str) -> str:
             return ipaddress.ip_address(anonymized_ip).compressed
     except ValueError:
         return ip_address
+
+
+def is_valid_ip_v4_address(ip_str: str) -> bool:
+    """
+    Validates an IPv4 address string.
+
+    Args:
+        ip_str (str): The IPv4 address string to validate.
+
+    Returns:
+        bool: True if the IP address is valid, False otherwise.
+    """
+    try:
+        ipaddress.ip_address(ip_str)
+        return True
+    except ValueError:
+        return False
 
 
 def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dict]:
@@ -155,3 +200,31 @@ async def process_audit_logs(
     except ValidationError as e:
         logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Failed to process audit logs")
+
+
+def validate_date(date_str: str) -> bool:
+    """
+    Validates a date string against various formats
+    including ISO 8601, year-month-day, and year-month.
+
+    Args:
+        date_str (str): The date string to validate.
+
+    Returns:
+        bool: True if the date string is valid, False otherwise.
+    """
+    if DATE_FORMAT_REGEX.match(date_str):
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%SZ",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d",
+            "%Y-%m",
+            "%Y",
+        ):
+            try:
+                datetime.strptime(date_str, fmt)
+                return True
+            except ValueError:
+                pass
+    return False

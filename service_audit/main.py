@@ -11,12 +11,13 @@ from service_audit.config_manager import ConfigManager
 from service_audit.custom_logger import get_logger
 from service_audit.elastic import CustomElasticsearch
 from service_audit.elastic_filters import QueryFilterElasticsearch
-from service_audit.models import AuditLogEntry, CreateResponse, SearchResponse
-from service_audit.utils import (
-    SearchParams,
-    generate_random_audit_log,
-    process_audit_logs,
+from service_audit.models import (
+    AuditLogEntry,
+    CreateResponse,
+    SearchParamsV2,
+    SearchResponse,
 )
+from service_audit.utils import generate_random_audit_log, process_audit_logs
 
 # config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
 # elasticsearch_url = config.elasticsearch.url
@@ -147,8 +148,8 @@ async def create_random_audit_log() -> CreateResponse:
 
 @app.post("/search")
 def search_audit_log_entries(
-    params: Optional[SearchParams] = Body(default=None),
-) -> SearchResponse:
+    params: Optional[SearchParamsV2] = Body(default=None),
+) -> Any:
     """
     Performs a search query against audit log entries stored in Elasticsearch based on
     a set of search parameters.
@@ -168,7 +169,8 @@ def search_audit_log_entries(
         elastic_filters = QueryFilterElasticsearch(
             using=elastic, index=elastic_index_name
         )
-        result = elastic_filters.apply_filters(params or SearchParams())
+        result = elastic_filters.process_parameters(params or SearchParamsV2())
+
         return SearchResponse(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )
