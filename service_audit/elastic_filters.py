@@ -1,82 +1,47 @@
+from typing import Any, Dict, List
+
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Q, Search
+from elasticsearch_dsl import A, Search
 from fastapi import HTTPException
 
 from service_audit.custom_logger import get_logger
 from service_audit.models import (
+    AggregationRequest,
     AggregationType,
     FieldName,
     FilterType,
     SearchParamFilters,
-    SearchParams,
+    SearchParamsV2,
 )
 
 logger = get_logger("audit_service")
 
 
-class QueryFilterElasticsearch(Search):
+class ElasticSearchQueryBuilder(Search):
     elastic_index_name: str
 
     def __init__(self, using: Elasticsearch, index: str, **kwargs):
-        super(QueryFilterElasticsearch, self).__init__(
+        super(ElasticSearchQueryBuilder, self).__init__(
             using=using, index=index, **kwargs
         )
         self.elastic_index_name = index
 
-    def process_parameters(self, params):
+    def process_parameters(self, params: SearchParamsV2) -> Dict[str, Any]:
 
         s = self
 
-        # Either exclude or include fields from the search results.
-        if params.include_fields and params.exclude_fields is None:
-            s = s.source(includes=params.include_fields)
-        elif params.include_fields is None and params.exclude_fields:
-            s = s.source(excludes=params.exclude_fields)
-
-        # Performs text searches by utilizing a given set of parameters
-        # and iterating over each key-value pair using the key to determine
-        # whether a simple text or nested query should be executed.
-        if params.text_search_fields:
-            for key, value in params.text_search_fields.items():
-                if "." in key:
-                    path = key.split(".")[0]
-                    field = key.split(".")[1]
-                    s = s.query(
-                        "nested",
-                        path=path,
-                        query=Q("match", **{f"{path}__{field}": value}),
-                    )
-                else:
-                    s = s.query("match", **{key: value})
-
-        # Apply date range filtering with `date_range_start` and `date_range_end`
-        # start_date = datetime.fromisoformat(params.date_range_start)
-        # end_date = datetime.fromisoformat(params.date_range_end)
-        if params.date_range_start:
-            s = s.filter(
-                "range",
-                timestamp={
-                    "gte": params.date_range_start,
-                    "lte": params.date_range_end or "now",
-                },
-            )
-
-        if params.aggregations:
-            # s.aggs.bucket('by_sn', 'terms', field='event_name', order={'avg_action': 'desc'}).metric('avg_action', 'avg', field='action') # noqa E501
-            for bucket, field in params.aggregations.items():
-                if isinstance(field, str):
-                    s.aggs.bucket(bucket, A("terms", field=field))
-                elif isinstance(field, dict):
-                    pass
-                pass
-
-        # Set the maximum number of documents to return and ensure that `response.hits.total.value`
-        # consists of the total number of documents,
-        # which is typically limited to 10.000 by default.
         s = s.extra(from_=0, size=params.max_results, track_total_hits=True)
 
-        # Sort per default by `timestamp` in descending order.
-        s.sort(params.sort_by, {"order": params.sort_order})
+        s = self.sort_order(s, params)
+
+        if params.fields:
+            s = self.select_fields(s, params)
+
+        if params.filters:
+            s = self.process_filters(s, params.filters)
+
+        if params.aggs:
+            s = self.process_aggregations(s, params.aggs)
 
         response = s.execute()
 
@@ -91,21 +56,98 @@ class QueryFilterElasticsearch(Search):
             "index_size": response.hits.total.value,
         }
 
-    def search_audit_logs(self, params: SearchParams) -> Dict[str, Any]:
-        """
-        Performs an Elasticsearch search operation based on the provided parameters.
+    @staticmethod
+    def process_aggregations(s: Search, aggs: Dict[str, AggregationRequest]) -> Search:
+        print("[Process::aggregations]", aggs)
 
-        Args:
-            params (SearchParams): The search parameters for the operation.
+        # s.aggs.bucket('total_docs', A('value_count', field='_id'))
+        #
+        # s.aggs.bucket('per_tag', A('terms', field='event_name'))
+        #
+        # (s.aggs.bucket('per_tag_2', A('terms', field='event_name'))
+        #  .metric('max_lines', 'max', field='lines'))
+        #
+        # s.aggs.bucket('features', 'nested', path='event_name') \
+        #     .metric('name', A('terms', field='event_name'))
+        #
+        # s.aggs.bucket("aggs", "composite", sources=[
+        #     {"event_name": A("terms", field="event_name")},
+        #     {"action": A("terms", field="action")}
+        # ], size=2)
+        #
+        # s.aggs.bucket("events_over_time", A(
+        #     "date_histogram", field="timestamp", interval="day", format="yyyy-MM-dd"
+        # ))
+        #
+        # s.aggs.bucket("top_actors", A("terms", field="actor.identifier", size=10))
+        #
+        # s.aggs.bucket("status_distribution", A("terms", field="status", size=10))
+        #
+        # s.aggs.bucket("context_breakdown", A("terms", field="event_name"))
+        #
+        # filter_agg = A(
+        #     "filter", Q(
+        #         "range", timestamp={"gte": "2024-01-01", "lte": "2024-02-01"}
+        #     )
+        # )
+        # terms_agg = A("terms", field="event_name")
+        # filter_agg.aggs["context_breakdown"] = terms_agg
+        # s.aggs["filtered_context"] = filter_agg
 
-        Returns:
-            Dict[str, Any]: The search results in a transformed format.
+        for agg_name, values in aggs.items():
 
-        Raises:
-            HTTPException: If the search operation fails.
-        """
-        try:
-            return self.apply_filters(params)
-        except Exception as e:
-            logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
-            raise HTTPException(status_code=500, detail="Failed to query audit logs")
+            field = values.get("field")
+            agg_type = values.get("type")
+
+            if agg_type in (AggregationType.TERMS, AggregationType.VALUE_COUNT):
+                s.aggs.bucket(agg_name, A(agg_type, field=field))
+            if agg_type == AggregationType.NESTED:
+                for value in values.get("sub_aggregations"):
+                    path = values.get("path")
+                    nested_agg = A(AggregationType.NESTED, path=path)
+                    terms_agg = A(
+                        value.get("type"),
+                        field=value.get("field"),
+                        size=value.get("max_result"),
+                    )
+
+                    if "aggs" not in nested_agg:
+                        nested_agg.aggs = {}
+                    nested_agg.aggs[terms_agg.name] = terms_agg
+
+                    s.aggs[nested_agg.name] = nested_agg
+        return s
+
+    @staticmethod
+    def process_filters(s: Search, filters: List[SearchParamFilters]):
+        """Processes the filters applied to the search query."""
+        for f in filters:
+            if f.type == FilterType.RANGE:
+                if f.field == FieldName.TIMESTAMP:
+                    s = s.query("range", timestamp={"gte": f.gte, "lte": f.lte})
+                else:
+                    kwargs = {f"{f.field}": {"gte": f.gte, "lte": f.lte}}
+                    s.query("range", **kwargs)
+            elif f.type == FilterType.EXACT:
+                if f.field == FieldName.TIMESTAMP:
+                    s = s.query("term", timestamp=f.value)
+                else:
+                    s = s.query("term", **{f.field: f.value})
+            elif f.type == FilterType.TEXT_SEARCH:
+                s = s.query("multi_match", query=f.values[0], fields=[f.field])
+            elif f.type == FilterType.WILDCARD:
+                s = s.query("wildcard", **{f.field: f.value})
+            elif f.type == FilterType.EXISTS:
+                s = s.query("exists", field=f.field)
+        return s
+
+    @staticmethod
+    def sort_order(s: Search, params: SearchParamsV2):
+        """Sorts the search results by a given field and order."""
+        return s.sort({params.sort_by: {"order": params.sort_order}})
+
+    @staticmethod
+    def select_fields(s: Search, params: SearchParamsV2):
+        """Selects the fields to be returned in the search results."""
+        kwargs = {f"{params.fields_mode.value}s": params.fields}
+        return s.source(**kwargs)
