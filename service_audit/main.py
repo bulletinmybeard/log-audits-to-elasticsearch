@@ -12,12 +12,15 @@ from service_audit.custom_logger import get_logger
 from service_audit.elastic import CustomElasticsearch
 from service_audit.elastic_filters import ElasticSearchQueryBuilder
 from service_audit.models import (
-    AuditLogEntry,
     GenericResponse,
+    RandomAuditLogSettings,
     SearchParamsV2,
     SearchResults,
 )
-from service_audit.utils import generate_random_audit_log, process_audit_logs
+from service_audit.utils import (
+    generate_audit_log_entries_with_fake_data,
+    process_audit_logs,
+)
 
 # config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
 # elasticsearch_url = config.elasticsearch.url
@@ -104,8 +107,8 @@ async def validation_exception_handler(
 
 
 @app.post("/create")
-async def create_audit_log(
-    audit_log: Union[AuditLogEntry, List[AuditLogEntry]] = Body(...)
+async def create_audit_log_entry(
+    audit_log: Union[Any, List[Any]] = Body(...)
 ) -> GenericResponse:
     """
     Receives an audit log entry or a list of entries, validates them, and processes
@@ -122,15 +125,17 @@ async def create_audit_log(
     Raises:
         HTTPException
     """
-    log_entries = [audit_log] if not isinstance(audit_log, list) else audit_log
-    validated_logs = [entry.dict() for entry in log_entries]
     return await process_audit_logs(
-        elastic, cast(str, elastic_index_name), validated_logs
+        elastic,
+        cast(str, elastic_index_name),
+        [audit_log] if not isinstance(audit_log, list) else audit_log,
     )
 
 
-@app.post("/create-random")
-async def create_random_audit_log() -> GenericResponse:
+@app.post("/create/fake-log-entries")
+async def create_random_audit_log_entries(
+    data: RandomAuditLogSettings,
+) -> GenericResponse:
     """
     Generates and stores a single random audit log entry.
 
@@ -140,9 +145,10 @@ async def create_random_audit_log() -> GenericResponse:
     Raises:
         HTTPException
     """
-    random_log = generate_random_audit_log().dict()
     return await process_audit_logs(
-        elastic, cast(str, elastic_index_name), [random_log]
+        elastic,
+        cast(str, elastic_index_name),
+        generate_audit_log_entries_with_fake_data(data),
     )
 
 

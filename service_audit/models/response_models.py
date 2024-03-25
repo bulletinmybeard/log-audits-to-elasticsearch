@@ -2,17 +2,14 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from service_audit.models.resource import ResourceDetails
+
 
 class ActorDetails(BaseModel):
     identifier: Optional[str]
     type: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
-
-
-class ResourceDetails(BaseModel):
-    type: Optional[str]
-    id: Optional[str]
 
 
 class ServerInfo(BaseModel):

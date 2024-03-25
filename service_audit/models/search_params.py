@@ -145,7 +145,9 @@ class SubAggregationConfig(BaseModel):
 
 
 class AggregationSetup(MaxResultsMixin, BaseModel):
-    type: AggregationTypeEnum = Field(..., description="Specifies the type of aggregation.")
+    type: AggregationTypeEnum = Field(
+        ..., description="Specifies the type of aggregation."
+    )
     field: FieldIdentifierEnum = Field(..., description="The field to aggregate on.")
     sub_aggregations: Optional[List[SubAggregationConfig]] = Field(
         default=None, description="List of sub-aggregations to apply."

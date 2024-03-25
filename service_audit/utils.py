@@ -2,7 +2,7 @@ import ipaddress
 import re
 import traceback
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from elasticsearch import helpers
 from faker import Faker
@@ -15,8 +15,9 @@ from service_audit.models import (
     AuditLogEntry,
     GenericResponse,
     ResourceDetails,
-    ServerInfo
+    ServerInfo,
 )
+from service_audit.models.request import RandomAuditLogSettings
 
 fake = Faker()
 
@@ -50,7 +51,7 @@ DATE_FORMAT_REGEX = re.compile(
 )
 
 
-def anonymize_ip_address(ip_address: str) -> str:
+def anonymize_ip_address(ip_address: str) -> Union[ipaddress.IPv4Address, str]:
     """
     Anonymizes an IP address by replacing the last segments with zeros.
     For IPv4 addresses, the last two octets are set to zero.
@@ -124,13 +125,8 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
     return operations
 
 
-def generate_random_audit_log() -> AuditLogEntry:
-    """
-    Generates a random audit log entry using the Faker library.
-
-    Returns:
-    - AuditLogEntry: A randomly generated audit log entry.
-    """
+def generate_fake_log_entry() -> AuditLogEntry:
+    """Create a fake audit log entry using the Faker library."""
     return AuditLogEntry(
         timestamp=fake.date_time_this_year().isoformat(),
         event_name=fake.random_element(
@@ -141,7 +137,7 @@ def generate_random_audit_log() -> AuditLogEntry:
             type=fake.random_element(["user", "system"]),
             ip_address=fake.ipv4(),
             user_agent=fake.user_agent(),
-        ),
+        ).__dict__,
         action=fake.random_element(["create", "update", "delete", "login"]),
         comment=fake.sentence(),
         context=fake.random_element(
@@ -152,7 +148,7 @@ def generate_random_audit_log() -> AuditLogEntry:
                 ["user_account", "database", "cronjob", "system_file"]
             ),
             id=fake.uuid4(),
-        ),
+        ).__dict__,
         operation=fake.random_element(["create", "read", "update", "delete"]),
         status=fake.random_element(["success", "failure"]),
         endpoint=fake.uri_path(),
@@ -160,12 +156,24 @@ def generate_random_audit_log() -> AuditLogEntry:
             hostname=fake.hostname(),
             vm_name=fake.word(),
             ip_address=fake.ipv4(),
-        ),
+        ).__dict__,
         meta={
             "request_size": fake.random_number(digits=5),
             "response_time_ms": fake.random_int(min=1, max=1000),
         },
     )
+
+
+def generate_audit_log_entries_with_fake_data(
+    options: RandomAuditLogSettings,
+) -> List[Dict]:
+    """
+    Generates a random audit log entry using the Faker library.
+
+    Returns:
+    - AuditLogEntry: A randomly generated audit log entry.
+    """
+    return [generate_fake_log_entry().dict() for _ in range(options.fake_count)]
 
 
 async def process_audit_logs(
