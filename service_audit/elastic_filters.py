@@ -1,12 +1,15 @@
-import traceback
-from typing import Any, Dict
-
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
 from fastapi import HTTPException
 
 from service_audit.custom_logger import get_logger
-from service_audit.models import SearchParams
+from service_audit.models import (
+    AggregationType,
+    FieldName,
+    FilterType,
+    SearchParamFilters,
+    SearchParams,
+)
 
 logger = get_logger("audit_service")
 
@@ -20,7 +23,8 @@ class QueryFilterElasticsearch(Search):
         )
         self.elastic_index_name = index
 
-    def apply_filters(self, params):
+    def process_parameters(self, params):
+
         s = self
 
         # Either exclude or include fields from the search results.
