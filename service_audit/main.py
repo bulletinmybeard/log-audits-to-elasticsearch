@@ -7,10 +7,10 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from service_audit.config_manager import ConfigManager
+# from service_audit.config_manager import ConfigManager
 from service_audit.custom_logger import get_logger
 from service_audit.elastic import CustomElasticsearch
-from service_audit.elastic_filters import QueryFilterElasticsearch
+from service_audit.elastic_filters import ElasticSearchQueryBuilder
 from service_audit.models import (
     AuditLogEntry,
     CreateResponse,
@@ -166,7 +166,7 @@ def search_audit_log_entries(
         HTTPException
     """
     try:
-        elastic_filters = QueryFilterElasticsearch(
+        elastic_filters = ElasticSearchQueryBuilder(
             using=elastic, index=elastic_index_name
         )
         result = elastic_filters.process_parameters(params or SearchParamsV2())

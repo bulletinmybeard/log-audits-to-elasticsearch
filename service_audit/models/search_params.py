@@ -1,7 +1,7 @@
 import logging
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Extra, Field, field_validator, model_validator
 
@@ -98,13 +98,12 @@ class SearchParamFilters(BaseModel):
 
     @model_validator(mode="after")
     def validate_filter_fields(cls, v):
-        # Run additional validation checks based on the filter type and field.
         if v.type == FilterType.RANGE:
             # Check if the field is a date and validate the 'gte' and 'lte' values.
             if v.field == FieldName.TIMESTAMP:
                 if not all((validate_date(v.gte), validate_date(v.lte))):
                     raise ValueError(
-                        f"For a date 'range' filter, 'gte' and 'lte' must be valid dates (YYYY-MM-DDTHH:MM:SSZ)."
+                        f"For a date 'range' filter, 'gte' and 'lte' must be valid dates (YYYY-MM-DDTHH:MM:SSZ)."  # noqa
                     )
             # Check if the field is an IP address and validate the 'gte' and 'lte' values.
             if v.field in [
@@ -115,12 +114,10 @@ class SearchParamFilters(BaseModel):
                     (is_valid_ip_v4_address(v.gte), is_valid_ip_v4_address(v.lte))
                 ):
                     raise ValueError(
-                        f"For an IP address range filter, 'gte' and 'lte' must be valid IPv4 addresses."
+                        f"For an IP address range filter, 'gte' and 'lte' must be valid IPv4 addresses."  # noqa
                     )
         elif v.type == FilterType.MISSING:
             pass
-        # "field": "comment_",
-        # "type": "missing"
 
         # TODO: Add more checks for other types as needed!!!
         return v
@@ -145,7 +142,6 @@ class AggregationFilter(BaseModel):
 class SubAggregation(BaseModel):
     type: AggregationType
     field: FieldName
-    # Add more parameters for sub-aggregations as needed
 
 
 class AggregationRequest(MaxResultsMixin, BaseModel):
