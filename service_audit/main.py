@@ -133,8 +133,8 @@ async def create_audit_log_entry(
 
 
 @app.post("/create/fake-log-entries")
-async def create_random_audit_log_entries(
-    data: RandomAuditLogSettings,
+async def create_fake_audit_log_entries(
+    settings: RandomAuditLogSettings,
 ) -> GenericResponse:
     """
     Generates and stores a single random audit log entry.
@@ -148,7 +148,7 @@ async def create_random_audit_log_entries(
     return await process_audit_logs(
         elastic,
         cast(str, elastic_index_name),
-        generate_audit_log_entries_with_fake_data(data),
+        generate_audit_log_entries_with_fake_data(settings),
     )
 
 
@@ -181,7 +181,7 @@ def search_audit_log_entries(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )
     except Exception as e:
-        logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
+        logger.error(f"Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
 
 

@@ -165,15 +165,15 @@ def generate_fake_log_entry() -> AuditLogEntry:
 
 
 def generate_audit_log_entries_with_fake_data(
-    options: RandomAuditLogSettings,
+        settings: RandomAuditLogSettings,
 ) -> List[Dict]:
     """
     Generates a random audit log entry using the Faker library.
 
     Returns:
-    - AuditLogEntry: A randomly generated audit log entry.
+    - List[AuditLogEntry]: A list of audit log entries with fake data.
     """
-    return [generate_fake_log_entry().dict() for _ in range(options.fake_count)]
+    return [generate_fake_log_entry().dict() for _ in range(settings.fake_count)]
 
 
 async def process_audit_logs(
@@ -205,8 +205,8 @@ async def process_audit_logs(
             failed_count=failed_count,
             failed_items=failed_items,
         )
-    except ValidationError as e:
-        logger.error(f"Error: {e}\nFull stack trace:\n{traceback.format_exc()}")
+    except Exception as e:
+        logger.error(f"Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to process audit logs")
 
 

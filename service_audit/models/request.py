@@ -7,6 +7,6 @@ class RandomAuditLogSettings(BaseModel):
     fake_count: Optional[int] = Field(
         1,
         ge=1,
-        le=1000,
+        le=350,
         description="Specifies the number of fake audit log entries to generate.",
     )

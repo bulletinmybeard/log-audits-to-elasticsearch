@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Search
+from elasticsearch_dsl import A, Search, Q
 from fastapi import HTTPException
 
 from service_audit.custom_logger import get_logger
@@ -53,12 +53,23 @@ class ElasticSearchQueryBuilder(Search):
         return {
             "docs": [hit.to_dict() for hit in response.hits],
             "aggs": [agg.to_dict() for agg in response.aggs],
-            "index_size": response.hits.total.value,
+            "index_size": response.hits.total.value
         }
 
     @staticmethod
+    def sort_order(s: Search, params: SearchParamsV2) -> Search:
+        return s.sort({params.sort_by: {"order": params.sort_order}})
+
+    @staticmethod
+    def select_fields(s: Search, params: SearchParamsV2) -> Search:
+        kwargs = {f"{params.fields_mode.value}s": params.fields}
+        return s.source(**kwargs)
+
+    @staticmethod
     def process_aggregations(s: Search, aggs: Dict[str, AggregationSetup]) -> Search:
-        print("[Process::aggregations]", aggs)
+        logger.info("[Process::aggregations] %s", aggs)
+
+        #s.aggs.bucket('total_docs', A('value_count', field='_id'))
 
         # s.aggs.bucket('total_docs', A('value_count', field='_id'))
         #
@@ -118,36 +129,49 @@ class ElasticSearchQueryBuilder(Search):
                     s.aggs[nested_agg.name] = nested_agg
         return s
 
-    @staticmethod
-    def process_filters(s: Search, filters: List[SearchFilterParams]):
-        """Processes the filters applied to the search query."""
+    def process_filters(self, s: Search, filters: List[SearchFilterParams]):
         for f in filters:
             if f.type == FilterTypeEnum.RANGE:
-                if f.field == FieldIdentifierEnum.TIMESTAMP:
-                    s = s.query("range", timestamp={"gte": f.gte, "lte": f.lte})
-                else:
-                    kwargs = {f"{f.field}": {"gte": f.gte, "lte": f.lte}}
-                    s.query("range", **kwargs)
+                s = self.process_filter_type_range(s, f)
             elif f.type == FilterTypeEnum.EXACT:
-                if f.field == FieldIdentifierEnum.TIMESTAMP:
-                    s = s.query("term", timestamp=f.value)
-                else:
-                    s = s.query("term", **{f.field: f.value})
+                self.process_filter_type_exact(s, f)
+            elif f.type == FilterTypeEnum.NESTED and ("." in f.field.value):
+                self.process_filter_type_nested(s, f)
             elif f.type == FilterTypeEnum.TEXT_SEARCH:
-                s = s.query("multi_match", query=f.values[0], fields=[f.field])
+                s = self.process_filter_type_text_search(s, f)
             elif f.type == FilterTypeEnum.WILDCARD:
-                s = s.query("wildcard", **{f.field: f.value})
+                s = self.process_filter_type_wildcard(s, f)
             elif f.type == FilterTypeEnum.EXISTS:
-                s = s.query("exists", field=f.field)
+                s = self.process_filter_type_exists(s, f)
         return s
 
     @staticmethod
-    def sort_order(s: Search, params: SearchParamsV2):
-        """Sorts the search results by a given field and order."""
-        return s.sort({params.sort_by: {"order": params.sort_order}})
+    def process_filter_type_exact(s: Search, f: SearchFilterParams) -> Search:
+        field = "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        return s.query("term", **{field: f.value})
 
     @staticmethod
-    def select_fields(s: Search, params: SearchParamsV2):
-        """Selects the fields to be returned in the search results."""
-        kwargs = {f"{params.fields_mode.value}s": params.fields}
-        return s.source(**kwargs)
+    def process_filter_type_nested(s: Search, f: SearchFilterParams) -> Search:
+        parent = f.field.value.split('.')[0]
+        field = f.field.value.split('.')[1]
+        return s.query(
+            'nested',
+            path=parent,
+            query=Q("match", **{f"{parent}__{field}": f.value}))
+
+    @staticmethod
+    def process_filter_type_range(s: Search, f: SearchFilterParams) -> Search:
+        field = "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        return s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
+
+    @staticmethod
+    def process_filter_type_text_search(s: Search, f: SearchFilterParams) -> Search:
+        return s.query("multi_match", query=f.values[0], fields=[f.field.value])
+
+    @staticmethod
+    def process_filter_type_wildcard(s: Search, f: SearchFilterParams) -> Search:
+        return s.query("wildcard", **{f.field.value: f.value})
+
+    @staticmethod
+    def process_filter_type_exists(s: Search, f: SearchFilterParams) -> Search:
+        return s.query("exists", field=f.field.value)

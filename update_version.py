@@ -19,11 +19,9 @@ def poetry_lock_no_update() -> None:
             capture_output=True,
             text=True,
         )
-        logger.info("Poetry lock updated.")
-        logger.info(result.stdout)
+        logger.info("Poetry lock updated. %s", result.stdout)
     except subprocess.CalledProcessError as e:
-        logger.error("Error running poetry lock:", e)
-        logger.error(e.stderr)
+        logger.error("Error running poetry lock: %s %s", e, e.stderr)
 
 
 def get_current_version() -> str:
@@ -33,10 +31,10 @@ def get_current_version() -> str:
         current_version = pyproject_data["tool"]["poetry"]["version"]
         return current_version
     except FileNotFoundError:
-        logger.error(f"{file_path} not found")
+        logger.error("%s not found", file_path)
         sys.exit(1)
     except KeyError as e:
-        logger.error(f"Error loading {file_path}: {e}")
+        logger.error(f"Error loading %s: %s", file_path, e)
         sys.exit(1)
 
 
@@ -114,7 +112,7 @@ def update_version_in_file(
         yield
         return
 
-    logger.info(f"Updated version in {file_path} to {new_version}")
+    logger.info("Updated version in %s to %s", file_path, file_path, new_version)
     yield
 
 

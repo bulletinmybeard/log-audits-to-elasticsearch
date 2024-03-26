@@ -163,6 +163,7 @@ class AggregationSetup(MaxResultsMixin, BaseModel):
 
 class SearchParamsV2(MaxResultsMixin, BaseModel):
     fields: Optional[List[FieldIdentifierEnum]] = Field(
+        default=None,
         description="Fields to include in results. Empty includes all fields.",
     )
     fields_mode: Optional[FieldSelectionMode] = Field(
