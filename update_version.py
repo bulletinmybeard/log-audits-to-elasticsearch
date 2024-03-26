@@ -73,7 +73,6 @@ if arg_current_version == arg_new_version:
 # File paths where the version numbers should be updated.
 file_path_list = [
     "service_audit/__init__.py",
-    "pyproject.toml",
     "service_audit/main.py",
 ]
 
