@@ -30,19 +30,25 @@ class ElasticSearchQueryBuilder(Search):
 
         s = self
 
+        # Set the number of documents to be returned.
         s = s.extra(from_=0, size=params.max_results, track_total_hits=True)
 
+        # Sort the documents based on the `sort_by` (field) and sort_order (asc/desc).
         s = self.sort_order(s, params)
 
+        # Select the fields to be returned.
         if params.fields:
             s = self.select_fields(s, params)
 
+        # Process all given filters.
         if params.filters:
             s = self.process_filters(s, params.filters)
 
+        # Process all given aggregations.
         if params.aggs:
             s = self.process_aggregations(s, params.aggs)
 
+        # Execute the search query.
         response = s.execute()
 
         if not response.success():
@@ -58,19 +64,19 @@ class ElasticSearchQueryBuilder(Search):
 
     @staticmethod
     def sort_order(s: Search, params: SearchParamsV2) -> Search:
+        """Sort the documents based on the `sort_by` (field) and sort_order (asc/desc)."""
         return s.sort({params.sort_by: {"order": params.sort_order}})
 
     @staticmethod
     def select_fields(s: Search, params: SearchParamsV2) -> Search:
+        """Select the fields to be returned."""
         kwargs = {f"{params.fields_mode.value}s": params.fields}
         return s.source(**kwargs)
 
     @staticmethod
     def process_aggregations(s: Search, aggs: Dict[str, AggregationSetup]) -> Search:
         logger.info("[Process::aggregations] %s", aggs)
-
-        #s.aggs.bucket('total_docs', A('value_count', field='_id'))
-
+        # s.aggs.bucket('total_docs', A('value_count', field='_id'))
         # s.aggs.bucket('total_docs', A('value_count', field='_id'))
         #
         # s.aggs.bucket('per_tag', A('terms', field='event_name'))
@@ -129,7 +135,7 @@ class ElasticSearchQueryBuilder(Search):
                     s.aggs[nested_agg.name] = nested_agg
         return s
 
-    def process_filters(self, s: Search, filters: List[SearchFilterParams]):
+    def process_filters(self, s: Search, filters: List[SearchFilterParams]) -> Search:
         for f in filters:
             if f.type == FilterTypeEnum.RANGE:
                 s = self.process_filter_type_range(s, f)
