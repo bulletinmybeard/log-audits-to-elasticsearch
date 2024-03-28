@@ -6,7 +6,7 @@ from typing import Generator, List
 
 import toml
 
-from service_audit.custom_logger import get_logger
+from audit_logger.custom_logger import get_logger
 
 logger = get_logger("audit_service")
 
@@ -34,7 +34,7 @@ def get_current_version() -> str:
         logger.error("%s not found", file_path)
         sys.exit(1)
     except KeyError as e:
-        logger.error(f"Error loading %s: %s", file_path, e)
+        logger.error("Error loading %s: %s", file_path, e)
         sys.exit(1)
 
 
@@ -72,8 +72,8 @@ if arg_current_version == arg_new_version:
 
 # File paths where the version numbers should be updated.
 file_path_list = [
-    "service_audit/__init__.py",
-    "service_audit/main.py",
+    "audit_logger/__init__.py",
+    "audit_logger/main.py",
 ]
 
 error_messages = []

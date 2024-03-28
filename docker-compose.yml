@@ -1,12 +1,16 @@
 version: '3'
 services:
-  service-audit:
-    container_name: service-audit
+  audit-logger:
+    container_name: audit-logger
     build:
       context: .
-      dockerfile: docker/service-audit/Dockerfile
+      dockerfile: docker/audit-logger/Dockerfile
+    env_file:
+      - .env
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic
     restart: unless-stopped
     volumes:
       - ./:/app
@@ -16,25 +20,22 @@ services:
     ports:
       - "8000:8000"
     networks:
-      service_audit:
+      audit_logger:
         ipv4_address: 172.70.0.2
 
   elasticsearch:
     container_name: elasticsearch
     image: arm64v8/elasticsearch:7.17.10
+    env_file:
+      - .env
     environment:
       - discovery.type=single-node
       - PIPELINE_WORKERS=4
       - LOG_LEVEL=debug
       - MONITORING_ENABLED=enabled
-#    BASIC AUTH
-#      - xpack.security.enabled=true
-#      - ELASTIC_USERNAME=elasticuser
-#      - ELASTIC_PASSWORD=elasticpassword
-#    API KEY
-#      - xpack.security.enabled=true
-#      - "ELASTIC_PASSWORD=changeme"
-#      - "bootstrap.memory_lock=true"
+      - xpack.security.enabled=true
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=elastic
     ulimits:
       memlock:
         soft: -1
@@ -47,7 +48,7 @@ services:
       - "9200:9200"
       - "9300:9300"
     networks:
-      service_audit:
+      audit_logger:
         ipv4_address: 172.70.0.3
 
   kibana:
@@ -57,10 +58,12 @@ services:
       dockerfile: Dockerfile
       args:
         KIBANA_VERSION: "7.17.10"
+    env_file:
+      - .env
     environment:
       - elasticsearch.hosts=elasticsearch:9200
-#      - ELASTICSEARCH_USERNAME=elasticuser
-#      - ELASTICSEARCH_PASSWORD=elasticpassword
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic
     restart: unless-stopped
     volumes:
       - sa_kibana_data:/usr/share/kibana/data
@@ -68,7 +71,7 @@ services:
     ports:
       - "5601:5601"
     networks:
-      service_audit:
+      audit_logger:
         ipv4_address: 172.70.0.4
     depends_on:
       - elasticsearch
@@ -90,7 +93,7 @@ volumes:
   sa_kibana_data:
 
 networks:
-  service_audit:
+  audit_logger:
     driver: bridge
     external: true
     ipam:

@@ -7,44 +7,32 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-# from service_audit.config_manager import ConfigManager
-from service_audit.custom_logger import get_logger
-from service_audit.elastic import CustomElasticsearch
-from service_audit.elastic_filters import ElasticSearchQueryBuilder
-from service_audit.models import (
+from audit_logger.config_manager import ConfigManager
+from audit_logger.custom_logger import get_logger
+from audit_logger.elastic import CustomElasticsearch
+from audit_logger.elastic_filters import ElasticSearchQueryBuilder
+from audit_logger.models import (
     GenericResponse,
     RandomAuditLogSettings,
     SearchParamsV2,
     SearchResults,
 )
-from service_audit.utils import (
+from audit_logger.utils import (
     generate_audit_log_entries_with_fake_data,
+    httpurl_to_str,
     process_audit_logs,
 )
 
-# config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
-# elasticsearch_url = config.elasticsearch.url
-# elastic_index_name = config.elasticsearch.index_name
-
-elasticsearch_url = os.getenv("ELASTICSEARCH_HOST")
-elastic_index_name = os.getenv("ELASTIC_INDEX_NAME")
-
+config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
 
 logger = get_logger("audit_service")
 
+elastic_index_name = config.elasticsearch.index_name
 
-# Initialize the Elasticsearch client and raise an error if the host is not set
-# as Elasticsearch is mandatory for the service to work.
-if elasticsearch_url is not None:
-    elastic = CustomElasticsearch(
-        hosts=[elasticsearch_url],
-        # http_auth=(elastic_username, elastic_password)
-    )
-else:
-    raise ValueError("ELASTICSEARCH_HOST environment variable is not set.")
-
-if elastic_index_name is None:
-    raise ValueError("ELASTIC_INDEX_NAME environment variable is not set.")
+elastic = CustomElasticsearch(
+    hosts=[httpurl_to_str(url) for url in config.elasticsearch.hosts],
+    http_auth=(config.elasticsearch.username, config.elasticsearch.password),
+)
 
 
 @asynccontextmanager
@@ -107,9 +95,7 @@ async def validation_exception_handler(
 
 
 @app.post("/create")
-async def create_audit_log_entry(
-    audit_log: Union[Any, List[Any]] = Body(...)
-) -> GenericResponse:
+async def create_audit_log_entry(audit_log: Union[Any, List[Any]] = Body(...)) -> Any:
     """
     Receives an audit log entry or a list of entries, validates them, and processes
     them to be stored in Elasticsearch.
@@ -181,7 +167,7 @@ def search_audit_log_entries(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )
     except Exception as e:
-        logger.error(f"Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
+        logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
 
 

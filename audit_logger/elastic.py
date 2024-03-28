@@ -1,4 +1,4 @@
-from typing import Any
+import traceback
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (
@@ -9,15 +9,12 @@ from elasticsearch.exceptions import (
     TransportError,
 )
 
+from audit_logger.custom_logger import get_logger
+
+logger = get_logger("audit_service")
+
 
 class CustomElasticsearch(Elasticsearch):
-    def __init__(self, hosts=None, **kwargs) -> None:
-        # Store hosts for potential re-instantiation by helpers
-        self._hosts = hosts or ["localhost"]
-        super().__init__(hosts=self._hosts, **kwargs)
-
-    def options(self, **kwargs) -> Any:
-        return type(self)(hosts=self._hosts, **kwargs)
 
     def check_health(self) -> None:
         """
@@ -26,13 +23,19 @@ class CustomElasticsearch(Elasticsearch):
         try:
             if not self.ping():
                 raise ValueError("[Elastic] Service is not reachable")
+            else:
+                logger.info("[Elastic] Service is reachable")
         except (
             ConnectionError,
             TransportError,
             AuthorizationException,
             AuthenticationException,
         ) as e:
-            # Raise a more generic error but log the specific error message
+            logger.error(
+                "[Elastic] connection/authentication error: %s\nFull stack trace:\n%s",
+                e,
+                traceback.format_exc(),
+            )
             raise ConnectionError(f"[Elastic] connection/authentication failed: {e}")
 
     def check_index_exists(self, index_name: str) -> None:
@@ -46,8 +49,18 @@ class CustomElasticsearch(Elasticsearch):
                     body=f"[Elastic] index '{index_name}' does not exist",
                 )
         except NotFoundError as e:
+            logger.error(
+                "[Elastic] Not found error: %s\nFull stack trace:\n%s",
+                e,
+                traceback.format_exc(),
+            )
             raise e
         except AuthorizationException as e:
+            logger.error(
+                "[Elastic] Authorization error: %s\nFull stack trace:\n%s",
+                e,
+                traceback.format_exc(),
+            )
             raise ValueError(
                 f"[Elastic] Authorization error accessing index '{index_name}': {e}"
             )
@@ -58,5 +71,5 @@ class CustomElasticsearch(Elasticsearch):
         """
         Ensures Elasticsearch service is reachable and the specified index exists.
         """
-        self.check_health()  # Check Elasticsearch service reachability
-        self.check_index_exists(index_name)  # Check if the index exists
+        self.check_health()
+        self.check_index_exists(index_name)

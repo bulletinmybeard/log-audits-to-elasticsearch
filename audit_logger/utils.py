@@ -2,22 +2,22 @@ import ipaddress
 import re
 import traceback
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
-from elasticsearch import helpers
+from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
 from fastapi import HTTPException
-from pydantic import ValidationError
+from pydantic import HttpUrl
 
-from service_audit.custom_logger import get_logger
-from service_audit.models import (
+from audit_logger.custom_logger import get_logger
+from audit_logger.models import (
     ActorDetails,
     AuditLogEntry,
     GenericResponse,
+    RandomAuditLogSettings,
     ResourceDetails,
-    ServerInfo,
 )
-from service_audit.models.request import RandomAuditLogSettings
+from audit_logger.models.server_details import ServerDetails
 
 fake = Faker()
 
@@ -51,7 +51,7 @@ DATE_FORMAT_REGEX = re.compile(
 )
 
 
-def anonymize_ip_address(ip_address: str) -> Union[ipaddress.IPv4Address, str]:
+def anonymize_ip_address(ip_address: str) -> str:
     """
     Anonymizes an IP address by replacing the last segments with zeros.
     For IPv4 addresses, the last two octets are set to zero.
@@ -66,30 +66,31 @@ def anonymize_ip_address(ip_address: str) -> Union[ipaddress.IPv4Address, str]:
     - str: The anonymized IP address.
     """
     try:
+        ip_address = str(ip_address)
         ip_obj = ipaddress.ip_address(ip_address)
         if ip_obj.version == 4:
             octets = ip_address.split(".")
-            return ".".join(octets[:2] + ["0", "0"])
+            return str(".".join(octets[:2] + ["0", "0"]))
         elif ip_obj.version == 6:
             hextets = ip_address.split(":")
             anonymized_ip = ":".join(hextets[:4] + ["0", "0", "0", "0"])
-            return ipaddress.ip_address(anonymized_ip).compressed
+            return str(ipaddress.ip_address(anonymized_ip).compressed)
     except ValueError:
-        return ip_address
+        return str(ip_address)
 
 
-def is_valid_ip_v4_address(ip_str: str) -> bool:
+def is_valid_ip_v4_address(ip_address: str) -> bool:
     """
     Validates an IPv4 address string.
 
     Args:
-        ip_str (str): The IPv4 address string to validate.
+        ip_address (str): The IPv4 address string to validate.
 
     Returns:
         bool: True if the IP address is valid, False otherwise.
     """
     try:
-        ipaddress.ip_address(ip_str)
+        ipaddress.ip_address(ip_address)
         return True
     except ValueError:
         return False
@@ -109,7 +110,7 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
     """
     operations: List[Dict] = []
     for entry in log_entries:
-        for ip_field in ["ip_address", "actor.ip_address", "server_details.ip_address"]:
+        for ip_field in ["ip_address", "actor.ip_address", "server.ip_address"]:
             ip_path = ip_field.split(".")
             current_level = entry
             for part in ip_path[:-1]:
@@ -125,70 +126,32 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
     return operations
 
 
-def generate_fake_log_entry() -> AuditLogEntry:
-    """Create a fake audit log entry using the Faker library."""
-    return AuditLogEntry(
-        timestamp=fake.date_time_this_year().isoformat(),
-        event_name=fake.random_element(
-            ["user_login", "data_backup", "file_access", "role_update"]
-        ),
-        actor=ActorDetails(
-            identifier=fake.random_element(["j.doe", "j.dot", "a.smith", "s.jones"]),
-            type=fake.random_element(["user", "system"]),
-            ip_address=fake.ipv4(),
-            user_agent=fake.user_agent(),
-        ).__dict__,
-        action=fake.random_element(["create", "update", "delete", "login"]),
-        comment=fake.sentence(),
-        context=fake.random_element(
-            ["user_management", "system_backup", "content_delivery", "security"]
-        ),
-        resource=ResourceDetails(
-            type=fake.random_element(
-                ["user_account", "database", "cronjob", "system_file"]
-            ),
-            id=fake.uuid4(),
-        ).__dict__,
-        operation=fake.random_element(["create", "read", "update", "delete"]),
-        status=fake.random_element(["success", "failure"]),
-        endpoint=fake.uri_path(),
-        server_details=ServerInfo(
-            hostname=fake.hostname(),
-            vm_name=fake.word(),
-            ip_address=fake.ipv4(),
-        ).__dict__,
-        meta={
-            "request_size": fake.random_number(digits=5),
-            "response_time_ms": fake.random_int(min=1, max=1000),
-        },
-    )
-
-
 def generate_audit_log_entries_with_fake_data(
-        settings: RandomAuditLogSettings,
+    settings: RandomAuditLogSettings,
 ) -> List[Dict]:
     """
     Generates a random audit log entry using the Faker library.
 
     Returns:
-    - List[AuditLogEntry]: A list of audit log entries with fake data.
+    - List[Dict]: A list of audit log entries with fake data.
     """
     return [generate_fake_log_entry().dict() for _ in range(settings.fake_count)]
 
 
+# ) -> GenericResponse:
 async def process_audit_logs(
-    elastic: Any, elastic_index_name: str, log_entries: List[Dict]
-) -> GenericResponse:
+    elastic: Elasticsearch, elastic_index_name: str, log_entries: List[Dict]
+) -> Any:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
 
     Args:
-    - es: An instance of the Elasticsearch client.
+    - elastic: An instance of the Elasticsearch client.
     - elastic_index_name (str): The name of the Elasticsearch index.
     - log_entries (List[Dict]): A list of audit log entries to be processed.
 
     Returns:
-    - CreateResponse
+    - GenericResponse
 
     Raises:
     - HTTPException
@@ -198,15 +161,19 @@ async def process_audit_logs(
         success_count, failed = helpers.bulk(elastic, operations)
         failed_count = len(failed) if isinstance(failed, list) else failed
         failed_items = failed if isinstance(failed, list) else []
-
         return GenericResponse(
             status="success",
             success_count=success_count,
             failed_count=failed_count,
             failed_items=failed_items,
         )
+    except SerializationError as e:
+        logger.error(
+            "SerializationError: %s\nFull stack trace:\n%s", e, traceback.format_exc()
+        )
+        raise HTTPException(status_code=500, detail="Failed to process audit logs")
     except Exception as e:
-        logger.error(f"Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
+        logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to process audit logs")
 
 
@@ -236,3 +203,46 @@ def validate_date(date_str: str) -> bool:
             except ValueError:
                 pass
     return False
+
+
+def generate_fake_log_entry() -> AuditLogEntry:
+    """Create a fake audit log entry using the Faker library."""
+    return AuditLogEntry(
+        timestamp=fake.date_time_this_year().isoformat(),
+        event_name=fake.random_element(
+            ["user_login", "data_backup", "file_access", "role_update"]
+        ),
+        actor=ActorDetails(
+            identifier=fake.random_element(["j.doe", "j.dot", "a.smith", "s.jones"]),
+            type=fake.random_element(["user", "system"]),
+            ip_address=fake.ipv4(),
+            user_agent=fake.user_agent(),
+        ),
+        action=fake.random_element(["create", "update", "delete", "login"]),
+        comment=fake.sentence(),
+        context=fake.random_element(
+            ["user_management", "system_backup", "content_delivery", "security"]
+        ),
+        resource=ResourceDetails(
+            type=fake.random_element(
+                ["user_account", "database", "cronjob", "system_file"]
+            ),
+            id=fake.uuid4(),
+        ),
+        operation=fake.random_element(["create", "read", "update", "delete"]),
+        status=fake.random_element(["success", "failure"]),
+        endpoint=fake.uri_path(),
+        server=ServerDetails(
+            hostname=fake.hostname(),
+            vm_name=fake.word(),
+            ip_address=fake.ipv4(),
+        ),
+        meta={
+            "request_size": fake.random_number(digits=5),
+            "response_time_ms": fake.random_int(min=1, max=1000),
+        },
+    )
+
+
+def httpurl_to_str(url: HttpUrl) -> str:
+    return str(url)

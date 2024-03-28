@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Extra, Field, field_validator, model_validator
 
-from service_audit.utils import is_valid_ip_v4_address, validate_date
+from audit_logger.utils import is_valid_ip_v4_address, validate_date
 
-logger = logging.getLogger("service_audit")
+logger = logging.getLogger("audit_logger")
 
 
 class MaxResultsMixin(BaseModel):
@@ -56,10 +56,10 @@ class FieldIdentifierEnum(str, Enum):
     OPERATION = "operation"
     STATUS = "status"
     ENDPOINT = "endpoint"
-    SERVER_DETAILS = "server_details"
-    SERVER_DETAILS_HOSTNAME = "server_details.hostname"
-    SERVER_DETAILS_VM_NAME = "server_details.vm_name"
-    SERVER_DETAILS_IP_ADDRESS = "server_details.ip_address"
+    SERVER = "server"
+    SERVER_HOSTNAME = "server.hostname"
+    SERVER_VM_NAME = "server.vm_name"
+    SERVER_IP_ADDRESS = "server.ip_address"
 
 
 class AggregationTypeEnum(str, Enum):
@@ -108,7 +108,7 @@ class SearchFilterParams(BaseModel):
             # Check if the field is an IP address and validate the 'gte' and 'lte' values.
             if v.field in [
                 FieldIdentifierEnum.ACTOR_IP_ADDRESS,
-                FieldIdentifierEnum.SERVER_DETAILS_IP_ADDRESS,
+                FieldIdentifierEnum.SERVER_IP_ADDRESS,
             ]:
                 if not all(
                     (is_valid_ip_v4_address(v.gte), is_valid_ip_v4_address(v.lte))

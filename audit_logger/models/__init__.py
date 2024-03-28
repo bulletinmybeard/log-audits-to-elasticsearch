@@ -1,11 +1,10 @@
-from .actor import ActorDetails
+from .actor_details import ActorDetails
 from .audit_log_entry import AuditLogEntry
 from .config import (
     APISettings,
     AppConfig,
     CORSOptions,
     ElasticsearchSettings,
-    KibanaSettings,
     URLFieldValidatorMixin,
 )
 from .request import RandomAuditLogSettings
@@ -15,7 +14,6 @@ from .response_models import (
     GenericResponse,
     LogEntryDetails,
     SearchResults,
-    ServerInfo,
 )
 from .search_params import (
     AggregationSetup,
@@ -28,4 +26,4 @@ from .search_params import (
     SearchParamsV2,
     SortOrderEnum,
 )
-from .server_details import ServerInfo
+from .server_details import ServerDetails

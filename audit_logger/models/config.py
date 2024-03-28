@@ -20,15 +20,14 @@ class ElasticsearchSettings(BaseModel, URLFieldValidatorMixin):
     url: HttpUrl = Field(
         description="Elasticsearch URL (e.g., http://elasticsearch:9200).",
     )
+    hosts: List[HttpUrl] = Field(
+        description="Elasticsearch URL (e.g., [http://elasticsearch:9200]).",
+    )
     index_name: str = Field(
         description="The name of the Elasticsearch Index.",
     )
     username: Optional[str] = Field(description="Elasticsearch username.")
     password: Optional[str] = Field(description="Elasticsearch password.")
-
-
-class KibanaSettings(BaseModel, URLFieldValidatorMixin):
-    url: HttpUrl = Field(description="Kibana URL (e.g., http://kibana:5601).")
 
 
 class APISettings(BaseModel):
@@ -54,7 +53,6 @@ class CORSOptions(BaseModel):
 
 class AppConfig(BaseModel):
     elasticsearch: ElasticsearchSettings
-    kibana: KibanaSettings
     api: APISettings
     cors: Optional[CORSOptions] = Field(
         description="CORS Middleware options to apply to the API."

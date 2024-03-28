@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "service-audit"
+name = "audit-logger"
 version = "0.5.0"
 description = ""
 authors = ["Robin Schulz <hello@rschu.me>"]
@@ -16,6 +16,7 @@ elasticsearch = "^8.12.1"
 ipaddress = "^1.0.23"
 pyyaml = "^6.0.1"
 elasticsearch-dsl = "^8.12.0"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
@@ -32,7 +33,6 @@ pytest = "^8.1.1"
 types-pyyaml = "^6.0.12.20240311"
 faker = "^24.3.0"
 flake8-pyproject = "^1.2.3"
-toml = "^0.10.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -55,7 +55,7 @@ exclude = [
 
 [tool.coverage.run]
 branch = true
-source = ["service_audit"]
+source = ["audit_logger"]
 
 [tool.coverage.report]
 fail_under = 80

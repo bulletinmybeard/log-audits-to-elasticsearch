@@ -1,11 +1,11 @@
 from typing import Any, Dict, List
 
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Search, Q
+from elasticsearch_dsl import A, Q, Search
 from fastapi import HTTPException
 
-from service_audit.custom_logger import get_logger
-from service_audit.models import (
+from audit_logger.custom_logger import get_logger
+from audit_logger.models import (
     AggregationSetup,
     AggregationTypeEnum,
     FieldIdentifierEnum,
@@ -59,7 +59,7 @@ class ElasticSearchQueryBuilder(Search):
         return {
             "docs": [hit.to_dict() for hit in response.hits],
             "aggs": [agg.to_dict() for agg in response.aggs],
-            "index_size": response.hits.total.value
+            "index_size": response.hits.total.value,
         }
 
     @staticmethod
@@ -117,8 +117,10 @@ class ElasticSearchQueryBuilder(Search):
             agg_type = values.get("type")
 
             if agg_type in (AggregationTypeEnum.TERMS, AggregationTypeEnum.VALUE_COUNT):
+                # Simple bucket aggregation for type `terms` and `value_count`.
                 s.aggs.bucket(agg_name, A(agg_type, field=field))
             if agg_type == AggregationTypeEnum.NESTED:
+                # Nested bucket aggregation.
                 for value in values.get("sub_aggregations"):
                     path = values.get("path")
                     nested_agg = A(AggregationTypeEnum.NESTED, path=path)
@@ -127,7 +129,6 @@ class ElasticSearchQueryBuilder(Search):
                         field=value.get("field"),
                         size=value.get("max_result"),
                     )
-
                     if "aggs" not in nested_agg:
                         nested_agg.aggs = {}
                     nested_agg.aggs[terms_agg.name] = terms_agg
@@ -153,21 +154,24 @@ class ElasticSearchQueryBuilder(Search):
 
     @staticmethod
     def process_filter_type_exact(s: Search, f: SearchFilterParams) -> Search:
-        field = "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        field = (
+            "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        )
         return s.query("term", **{field: f.value})
 
     @staticmethod
     def process_filter_type_nested(s: Search, f: SearchFilterParams) -> Search:
-        parent = f.field.value.split('.')[0]
-        field = f.field.value.split('.')[1]
+        parent = f.field.value.split(".")[0]
+        field = f.field.value.split(".")[1]
         return s.query(
-            'nested',
-            path=parent,
-            query=Q("match", **{f"{parent}__{field}": f.value}))
+            "nested", path=parent, query=Q("match", **{f"{parent}__{field}": f.value})
+        )
 
     @staticmethod
     def process_filter_type_range(s: Search, f: SearchFilterParams) -> Search:
-        field = "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        field = (
+            "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
+        )
         return s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
 
     @staticmethod

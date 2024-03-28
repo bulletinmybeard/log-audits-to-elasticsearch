@@ -29,6 +29,8 @@ ENV \
     ELASTIC_POLICY_NAME=${ELASTIC_POLICY_NAME} \
     ELASTIC_USERNAME=${ELASTIC_USERNAME} \
     ELASTIC_PASSWORD=${ELASTIC_PASSWORD} \
+    ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME} \
+    ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD} \
     ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST} \
     KIBANA_HOST=${KIBANA_HOST}
 
@@ -49,7 +51,7 @@ RUN \
 
 WORKDIR /app
 
-COPY ./docker/service-audit/entrypoint.sh /opt/entrypoint.sh
+COPY ./docker/audit-logger/entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
 RUN \
