@@ -11,6 +11,7 @@ from audit_logger.config_manager import ConfigManager
 from audit_logger.custom_logger import get_logger
 from audit_logger.elastic import CustomElasticsearch
 from audit_logger.elastic_filters import ElasticSearchQueryBuilder
+from audit_logger.middlewares import add_middleware
 from audit_logger.models import (
     GenericResponse,
     RandomAuditLogSettings,
@@ -31,7 +32,11 @@ elastic_index_name = config.elasticsearch.index_name
 
 elastic = CustomElasticsearch(
     hosts=[httpurl_to_str(url) for url in config.elasticsearch.hosts],
-    http_auth=(config.elasticsearch.username, config.elasticsearch.password),
+    http_auth=(
+        (config.elasticsearch.username, config.elasticsearch.password)
+        if config.elasticsearch.username and config.elasticsearch.password
+        else None
+    ),
 )
 
 
@@ -60,6 +65,8 @@ app = FastAPI(
     redirect_slashes=True,
     lifespan=lifespan,
 )
+
+add_middleware(app, config)
 
 
 @app.exception_handler(RequestValidationError)

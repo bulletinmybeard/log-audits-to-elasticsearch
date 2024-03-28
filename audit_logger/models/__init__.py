@@ -1,12 +1,6 @@
 from .actor_details import ActorDetails
 from .audit_log_entry import AuditLogEntry
-from .config import (
-    APISettings,
-    AppConfig,
-    CORSOptions,
-    ElasticsearchSettings,
-    URLFieldValidatorMixin,
-)
+from .config import APISettings, AppConfig, CORSSettings, ElasticsearchSettings
 from .request import RandomAuditLogSettings
 from .resource import ResourceDetails
 from .response_models import (

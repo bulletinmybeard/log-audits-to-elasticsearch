@@ -27,7 +27,6 @@ class ElasticSearchQueryBuilder(Search):
         self.elastic_index_name = index
 
     def process_parameters(self, params: SearchParamsV2) -> Dict[str, Any]:
-
         s = self
 
         # Set the number of documents to be returned.
@@ -112,7 +111,6 @@ class ElasticSearchQueryBuilder(Search):
         # s.aggs["filtered_context"] = filter_agg
 
         for agg_name, values in aggs.items():
-
             field = values.get("field")
             agg_type = values.get("type")
 
