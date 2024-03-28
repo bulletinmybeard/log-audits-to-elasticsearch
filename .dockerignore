@@ -4,7 +4,7 @@
 # But whitelist necessary files and directories
 !audit_logger/**
 !docker/**
-!config-sample.yaml
+!config.yaml
 !Dockerfile
 !entrypoint.sh
 !*.sh

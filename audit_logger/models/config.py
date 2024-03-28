@@ -14,7 +14,7 @@ class ElasticsearchSettings(BaseModel):
     password: Optional[str] = Field(description="Elasticsearch password.")
 
     @field_validator("hosts")
-    def validate_urls(cls, values: List[str]) -> List[str]:
+    def validate_elastic_hosts(cls, values: List[str]) -> List[str]:
         """
         Validator to parse each URL in the list and validate its format.
         Each URL must start with 'http://' or 'https://'.
@@ -54,12 +54,16 @@ class APIMiddlewares(BaseModel):
 
 class APISettings(BaseModel):
     middlewares: Optional[APIMiddlewares] = Field(
-        default=None,
         title="API Middlewares settings",
         description="API Middlewares settings",
     )
 
 
 class AppConfig(BaseModel):
-    elasticsearch: ElasticsearchSettings
-    api: APISettings
+    elasticsearch: ElasticsearchSettings = Field(
+        description="Elasticsearch settings"
+    )
+    api: APISettings = Field(
+        default=None,
+        description="API settings"
+    )

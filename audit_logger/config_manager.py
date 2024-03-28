@@ -19,17 +19,17 @@ class ConfigManager:
         Load and validate configuration from a YAML file.
         """
         if not os.path.exists(config_file_path):
-            raise FileNotFoundError(f"Config file not found: {config_file_path}")
+            raise FileNotFoundError("Config file not found: %s", config_file_path)
 
         with open(config_file_path, "r") as f:
             raw_config = yaml.safe_load(f)
 
         try:
             cls._config = AppConfig(**raw_config)
-            logger.info("Configuration loaded successfully.")
+            logger.info("Configuration loaded.")
             return cls._config
         except ValidationError as e:
-            raise ValueError(f"Invalid configuration format: {e}")
+            raise ValueError("Invalid configuration format: %s", e)
 
     @classmethod
     def get_config(cls) -> AppConfig:
