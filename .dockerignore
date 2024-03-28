@@ -1,7 +1,14 @@
-__pycache__
-.gitignore
-.pre-commit-config.yaml
-CODEOWNERS
-CHANGELOG
-README.md
-.env
+# Ignore everything
+**
+
+# But whitelist necessary files and directories
+!audit_logger/**
+!docker/**
+!config-sample.yaml
+!Dockerfile
+!entrypoint.sh
+!*.sh
+!*.json
+!*.yml
+!pyproject.toml
+!poetry.lock
