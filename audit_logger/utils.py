@@ -135,7 +135,7 @@ def generate_audit_log_entries_with_fake_data(
     Returns:
     - List[Dict]: A list of audit log entries with fake data.
     """
-    return [generate_fake_log_entry().dict() for _ in range(settings.fake_count)]
+    return [generate_fake_log_entry().dict() for _ in range(settings.bulk_count)]
 
 
 # ) -> GenericResponse:

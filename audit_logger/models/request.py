@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class RandomAuditLogSettings(BaseModel):
-    fake_count: Optional[int] = Field(
+    bulk_count: Optional[int] = Field(
         1,
         ge=1,
         le=350,

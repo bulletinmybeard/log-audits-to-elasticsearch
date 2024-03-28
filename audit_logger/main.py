@@ -125,7 +125,7 @@ async def create_audit_log_entry(audit_log: Union[Any, List[Any]] = Body(...)) -
     )
 
 
-@app.post("/create/fake-log-entries")
+@app.post("/create/auto-bulk")
 async def create_fake_audit_log_entries(
     settings: RandomAuditLogSettings,
 ) -> GenericResponse:
