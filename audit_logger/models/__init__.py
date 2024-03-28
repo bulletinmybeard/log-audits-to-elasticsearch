@@ -16,7 +16,6 @@ from .search_params import (
     FieldSelectionMode,
     FilterTypeEnum,
     SearchFilterParams,
-    SearchParams,
     SearchParamsV2,
     SortOrderEnum,
 )
