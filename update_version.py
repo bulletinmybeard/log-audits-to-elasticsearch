@@ -11,6 +11,9 @@ from audit_logger.custom_logger import get_logger
 logger = get_logger("audit_service")
 
 
+semver_regex = r"^\d+\.\d+\.\d+$"
+
+
 def poetry_lock_no_update() -> None:
     try:
         result = subprocess.run(
@@ -38,43 +41,43 @@ def get_current_version() -> str:
         sys.exit(1)
 
 
-if len(sys.argv) != 2:
-    logger.warning("Usage: python update_version.py <new_version>")
-    sys.exit(1)
-
 arg_current_version = get_current_version()
-arg_new_version = str(sys.argv[1])
+arg_new_version = None
 
-semver_regex = r"^\d+\.\d+\.\d+$"
+try:
+    # Check if both versions match the Semantic Versioning pattern.
+    if not re.match(semver_regex, arg_current_version):
+        logger.error(
+            f"Error: Current version '{arg_current_version}' "
+            f"does not match the Semantic Versioning pattern."
+        )
+        sys.exit(1)
 
-# Check if both versions match the Semantic Versioning pattern.
-if not re.match(semver_regex, arg_current_version):
-    logger.error(
-        f"Error: Current version '{arg_current_version}' "
-        f"does not match the Semantic Versioning pattern."
+    arg_new_version = input(
+        f"The current version is '{arg_current_version}'. Enter the new version number: "
     )
+
+    if not re.match(semver_regex, arg_new_version):
+        logger.error(
+            f"Error: New version '{arg_new_version}' "
+            f"does not match the Semantic Versioning pattern."
+        )
+        sys.exit(1)
+
+    # Abort if both versions are identical.
+    if arg_current_version == arg_new_version:
+        logger.error(
+            f"Error: New version '{arg_new_version}' is the same as the current version "
+            f"'{arg_current_version}' (nothing to do here...bye!)."
+        )
+        sys.exit(1)
+except KeyboardInterrupt:
+    logger.error("Operation aborted")
     sys.exit(1)
 
-if not re.match(semver_regex, arg_new_version):
-    logger.error(
-        f"Error: New version '{arg_new_version}' "
-        f"does not match the Semantic Versioning pattern."
-    )
-    sys.exit(1)
-
-# Abort if both versions are identical.
-if arg_current_version == arg_new_version:
-    logger.error(
-        f"Error: New version '{arg_new_version}' is the same as the current version "
-        f"'{arg_current_version}' (nothing to do here...bye!)."
-    )
-    sys.exit(1)
 
 # File paths where the version numbers should be updated.
-file_path_list = [
-    "audit_logger/__init__.py",
-    "audit_logger/main.py",
-]
+file_path_list = ["pyproject.toml", "audit_logger/__init__.py", "audit_logger/main.py"]
 
 error_messages = []
 
@@ -83,7 +86,6 @@ error_messages = []
 def update_version_in_file(
     file_path: str, current_version: str, new_version: str
 ) -> Generator[None, None, None]:
-    # Read the file.
     with open(file_path, "r") as file:
         content = file.read()
 
@@ -111,7 +113,7 @@ def update_version_in_file(
         yield
         return
 
-    logger.info("Updated version in %s to %s", file_path, file_path, new_version)
+    logger.info("Updated version in %s to %s", file_path, new_version)
     yield
 
 

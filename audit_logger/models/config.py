@@ -60,10 +60,5 @@ class APISettings(BaseModel):
 
 
 class AppConfig(BaseModel):
-    elasticsearch: ElasticsearchSettings = Field(
-        description="Elasticsearch settings"
-    )
-    api: APISettings = Field(
-        default=None,
-        description="API settings"
-    )
+    elasticsearch: ElasticsearchSettings = Field(description="Elasticsearch settings")
+    api: APISettings = Field(default=None, description="API settings")
