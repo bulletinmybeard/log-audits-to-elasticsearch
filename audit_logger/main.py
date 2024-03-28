@@ -24,7 +24,7 @@ from audit_logger.utils import (
     process_audit_logs,
 )
 
-config = ConfigManager.load_config(os.getenv("CONFIG_FILE_PATH"))
+config = ConfigManager.load_config(str(os.getenv("CONFIG_FILE_PATH")))
 
 logger = get_logger("audit_service")
 

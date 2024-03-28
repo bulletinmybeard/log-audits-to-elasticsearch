@@ -20,10 +20,8 @@ logger = get_logger("audit_service")
 class ElasticSearchQueryBuilder(Search):
     elastic_index_name: str
 
-    def __init__(self, using: Elasticsearch, index: str, **kwargs):
-        super(ElasticSearchQueryBuilder, self).__init__(
-            using=using, index=index, **kwargs
-        )
+    def __init__(self, using: Elasticsearch, index: str, **kwargs: Any) -> None:
+        super().__init__(using=using, index=index, **kwargs)
         self.elastic_index_name = index
 
     def process_parameters(self, params: SearchParamsV2) -> Dict[str, Any]:
@@ -73,7 +71,7 @@ class ElasticSearchQueryBuilder(Search):
         return s.source(**kwargs)
 
     @staticmethod
-    def process_aggregations(s: Search, aggs: Dict[str, AggregationSetup]) -> Search:
+    def process_aggregations(s: Search, aggs: Dict[str, Any]) -> Search:
         logger.info("[Process::aggregations] %s", aggs)
         # s.aggs.bucket('total_docs', A('value_count', field='_id'))
         # s.aggs.bucket('total_docs', A('value_count', field='_id'))
@@ -173,7 +171,7 @@ class ElasticSearchQueryBuilder(Search):
         return s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
 
     @staticmethod
-    def process_filter_type_text_search(s: Search, f: SearchFilterParams) -> Search:
+    def process_filter_type_text_search(s: Search, f: Any) -> Search:
         return s.query("multi_match", query=f.values[0], fields=[f.field.value])
 
     @staticmethod

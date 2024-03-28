@@ -8,47 +8,39 @@ from audit_logger.models.server_details import ServerDetails
 
 
 class AuditLogEntry(BaseModel):
-    timestamp: str = Field(
+    timestamp: Optional[str] = Field(
         default=None,
-        title="Timestamp",
         description="The date and time when the event occurred, in ISO 8601 format.",
     )
-    event_name: str = Field(title="Event Name", description="Name of the event.")
-    actor: ActorDetails = Field(
+    event_name: str = Field(description="Name of the event.")
+    actor: Optional[ActorDetails] = Field(
         default=None,
-        title="Actor",
         description="Details about the actor who initiated the event.",
     )
-    action: str = Field(title="Action", description="Action performed.")
+    action: str = Field(description="Action performed.")
     comment: Optional[str] = Field(
-        default=None, title="Comment", description="Optional comment about the event."
+        default=None, description="Optional comment about the event."
     )
-    context: str = Field(
+    context: Optional[str] = Field(
         default=None,
-        title="Context",
         description="The operational context in which the event occurred.",
     )
-    resource: ResourceDetails = Field(
+    resource: Optional[ResourceDetails] = Field(
         default=None,
-        title="Resource",
         description="Details about the resource.",
     )
-    operation: str = Field(
-        default=None, title="Operation", description="Type of operation performed."
+    operation: Optional[str] = Field(
+        default=None, description="Type of operation performed."
     )
-    status: str = Field(
-        default=None, title="Status", description="Status of the event."
-    )
+    status: Optional[str] = Field(default=None, description="Status of the event.")
     endpoint: Optional[str] = Field(
         default=None,
-        title="Endpoint",
         description="The API endpoint or URL accessed, if applicable.",
     )
-    server: ServerDetails = Field(
+    server: Optional[ServerDetails] = Field(
         default=None,
-        title="Server Details",
         description="Details about the server where the event occurred.",
     )
-    meta: Optional[Dict[str, Any]] = Field(
-        default={}, title="Meta", description="Optional metadata about the event."
+    meta: Dict[str, Any] = Field(
+        default={}, description="Optional metadata about the event."
     )

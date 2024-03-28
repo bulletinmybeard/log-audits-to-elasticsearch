@@ -191,7 +191,7 @@ class SearchParamsV2(MaxResultsMixin, BaseModel):
         extra = Extra.forbid
 
     @field_validator("sort_order")
-    def sort_order_valid(cls, v: str) -> str:
-        if v not in ["asc", "desc"]:
+    def sort_order_valid(cls, v: Optional[SortOrderEnum]) -> Optional[SortOrderEnum]:
+        if v and v not in SortOrderEnum:
             raise ValueError("sort_order must be 'asc' or 'desc'")
         return v

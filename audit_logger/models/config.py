@@ -54,11 +54,10 @@ class APIMiddlewares(BaseModel):
 
 class APISettings(BaseModel):
     middlewares: Optional[APIMiddlewares] = Field(
-        title="API Middlewares settings",
         description="API Middlewares settings",
     )
 
 
 class AppConfig(BaseModel):
     elasticsearch: ElasticsearchSettings = Field(description="Elasticsearch settings")
-    api: APISettings = Field(default=None, description="API settings")
+    api: Optional[APISettings] = Field(default=None, description="API settings")
