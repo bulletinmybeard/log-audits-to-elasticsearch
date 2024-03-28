@@ -9,8 +9,8 @@ services:
       - .env
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=elastic
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
     restart: unless-stopped
     volumes:
       - ./:/app
@@ -34,8 +34,8 @@ services:
       - LOG_LEVEL=debug
       - MONITORING_ENABLED=enabled
       - xpack.security.enabled=true
-      - ELASTIC_USERNAME=elastic
-      - ELASTIC_PASSWORD=elastic
+      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     ulimits:
       memlock:
         soft: -1
@@ -62,8 +62,8 @@ services:
       - .env
     environment:
       - elasticsearch.hosts=elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=elastic
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_USERNAME}
     restart: unless-stopped
     volumes:
       - sa_kibana_data:/usr/share/kibana/data

@@ -9,11 +9,14 @@ api:
   middlewares:
     cors:
       allow_origins:
-        - rschu.me
-        - intranet.int.nl-ix.net
+        - my-domain.me
+        - my-domain-com
       allow_credentials: true
       allow_methods:
+        - GET
+        - PUT
         - POST
+        - DELETE
       allow_headers:
         - content-type
         - user-agent

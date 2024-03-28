@@ -35,7 +35,6 @@ class LogEntryDetails(BaseModel):
     endpoint: Optional[str] = Field(
         default=None, description="The endpoint associated with the log entry."
     )
-    # server: Optional[ServerInfo] = Field(
     server: Optional[Any] = Field(
         default=None,
         description="Information about the server related to the log entry.",
