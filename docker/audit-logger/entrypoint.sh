@@ -3,8 +3,8 @@
 curl_with_optional_auth() {
     local url=$1
     shift
-    if [[ -n "$ELASTICSEARCH_USERNAME" ]] && [[ -n "$ELASTICSEARCH_PASSWORD" ]]; then
-        curl -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" "$@" "$url"
+    if [[ -n "$ELASTIC_USERNAME" ]] && [[ -n "$ELASTIC_PASSWORD" ]]; then
+        curl -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" "$@" "$url"
     else
         curl "$@" "$url"
     fi
@@ -12,15 +12,15 @@ curl_with_optional_auth() {
 
 wait_for_elasticsearch() {
     echo "Checking if Elasticsearch is up"
-    until curl_with_optional_auth "$ELASTICSEARCH_HOST" --output /dev/null --silent --head --fail; do
+    until curl_with_optional_auth "$ELASTIC_URL" --output /dev/null --silent --head --fail; do
         printf '.'
         sleep 5
     done
-    echo "Elasticsearch ($ELASTICSEARCH_HOST) is up and running!"
+    echo "Elasticsearch ($ELASTIC_URL) is up and running!"
 }
 
 create_elasticsearch_index_with_mappings() {
-    curl_output=$(curl_with_optional_auth "$ELASTICSEARCH_HOST/${ELASTIC_INDEX_NAME}" \
+    curl_output=$(curl_with_optional_auth "$ELASTIC_URL/${ELASTIC_INDEX_NAME}" \
             -X PUT \
             -H 'Content-Type: application/json' \
             -d @- << EOF
@@ -97,7 +97,7 @@ create_kibana_index_pattern() {
     echo "Kibana is ready!"
 
     existing_pattern=$(curl -s "$KIBANA_HOST/api/saved_objects/_find?type=index-pattern&fields=title" \
-        -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" | \
+        -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" | \
         jq -r --arg ELASTIC_INDEX_NAME "${ELASTIC_INDEX_NAME}" '.saved_objects[] | select(.attributes.title | startswith($ELASTIC_INDEX_NAME)).id')
 
     if [ -n "$existing_pattern" ]; then
@@ -108,7 +108,7 @@ create_kibana_index_pattern() {
     fi
 
     curl_output=$(curl -X POST "$KIBANA_HOST/api/saved_objects/index-pattern" \
-        -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" \
+        -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true' \
         -d '{
@@ -127,13 +127,13 @@ create_kibana_index_pattern() {
 }
 
 create_ilm_policy() {
-    policy_exists=$(curl_with_optional_auth "$ELASTICSEARCH_HOST/_ilm/policy/${ELASTIC_POLICY_NAME}" -X GET)
+    policy_exists=$(curl_with_optional_auth "$ELASTIC_URL/_ilm/policy/${ELASTIC_POLICY_NAME}" -X GET)
 
 
     if [[ "$policy_exists" == *"resource_not_found_exception"* ]]; then
         echo "Creating index lifecycle policy '${ELASTIC_POLICY_NAME}'"
 
-        curl_output=$(curl_with_optional_auth "$ELASTICSEARCH_HOST/_ilm/policy/${ELASTIC_POLICY_NAME}" \
+        curl_output=$(curl_with_optional_auth "$ELASTIC_URL/_ilm/policy/${ELASTIC_POLICY_NAME}" \
             -X PUT \
             -H 'Content-Type: application/json' \
             -d '{
@@ -167,13 +167,13 @@ create_ilm_policy() {
 }
 
 apply_ilm_policy_to_index() {
-    policy_applied=$(curl_with_optional_auth "$ELASTICSEARCH_HOST/${ELASTIC_INDEX_NAME}/_settings" -X GET)
+    policy_applied=$(curl_with_optional_auth "$ELASTIC_URL/${ELASTIC_INDEX_NAME}/_settings" -X GET)
 
 
     if [[ ! "$policy_applied" =~ ${ELASTIC_POLICY_NAME} ]]; then
         echo "Applying index lifecycle policy '${ELASTIC_POLICY_NAME}' to index '${ELASTIC_INDEX_NAME}'"
 
-        curl_output=$(curl_with_optional_auth "$ELASTICSEARCH_HOST/${ELASTIC_INDEX_NAME}/_settings" \
+        curl_output=$(curl_with_optional_auth "$ELASTIC_URL/${ELASTIC_INDEX_NAME}/_settings" \
             -X PUT \
             -H 'Content-Type: application/json' \
             -d '{

@@ -1,5 +1,6 @@
 import ipaddress
 import re
+import os
 import traceback
 from datetime import datetime
 from typing import Any, Dict, List
@@ -7,7 +8,7 @@ from typing import Any, Dict, List
 from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
 from fastapi import HTTPException
-from pydantic import HttpUrl
+from pydantic import HttpUrl, ValidationError
 
 from audit_logger.custom_logger import get_logger
 from audit_logger.models import (
@@ -15,9 +16,10 @@ from audit_logger.models import (
     AuditLogEntry,
     GenericResponse,
     RandomAuditLogSettings,
-    ResourceDetails,
+    ResourceDetails
 )
 from audit_logger.models.server_details import ServerDetails
+from audit_logger.models.env_vars import EnvVars
 
 fake = Faker()
 
@@ -246,3 +248,24 @@ def generate_fake_log_entry() -> AuditLogEntry:
 
 def httpurl_to_str(url: HttpUrl) -> str:
     return str(url)
+
+
+def load_env_vars() -> EnvVars:
+    """
+    Load all environment variables and validate them against the EnvVars Pydantic model.
+
+    Returns:
+        - EnvVars: The validated environment variables.
+    """
+    try:
+        env_vars: Dict[str, Any] = {}
+        for key, value in os.environ.items():
+            model_field = key.lower()
+            if model_field in EnvVars.__fields__:
+                env_vars[model_field] = value
+
+        logger.info("Env vars loaded.")
+        return EnvVars(**env_vars)
+    except ValidationError as e:
+        logger.error("Env vars validation error: %s", e)
+        raise

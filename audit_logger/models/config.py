@@ -1,32 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
-
-
-class ElasticsearchSettings(BaseModel):
-    hosts: List[HttpUrl] = Field(
-        description="Elasticsearch URL (e.g., [http://elasticsearch:9200]).",
-    )
-    index_name: str = Field(
-        description="The name of the Elasticsearch Index.",
-    )
-    username: Optional[str] = Field(description="Elasticsearch username.")
-    password: Optional[str] = Field(description="Elasticsearch password.")
-
-    @field_validator("hosts")
-    def validate_elastic_hosts(cls, values: List[str]) -> List[str]:
-        """
-        Validator to parse each URL in the list and validate its format.
-        Each URL must start with 'http://' or 'https://'.
-        """
-        urls = []
-        for v in values:
-            url_str = str(v)
-            if url_str.startswith("http://") or url_str.startswith("https://"):
-                urls.append(url_str)
-            else:
-                raise ValueError("Each URL must start with 'http://' or 'https://'.")
-        return urls
+from pydantic import BaseModel, Field
 
 
 class CORSSettings(BaseModel):
@@ -52,12 +26,7 @@ class APIMiddlewares(BaseModel):
     cors: CORSSettings = Field(description="CORS middleware settings")
 
 
-class APISettings(BaseModel):
+class AppConfig(BaseModel):
     middlewares: Optional[APIMiddlewares] = Field(
         description="API Middlewares settings",
     )
-
-
-class AppConfig(BaseModel):
-    elasticsearch: ElasticsearchSettings = Field(description="Elasticsearch settings")
-    api: Optional[APISettings] = Field(default=None, description="API settings")

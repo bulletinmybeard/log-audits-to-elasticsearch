@@ -16,25 +16,25 @@ from audit_logger.models import (
     GenericResponse,
     RandomAuditLogSettings,
     SearchParamsV2,
-    SearchResults,
+    SearchResults
 )
 from audit_logger.utils import (
     generate_audit_log_entries_with_fake_data,
-    httpurl_to_str,
     process_audit_logs,
+    load_env_vars
 )
-
-config = ConfigManager.load_config(str(os.getenv("CONFIG_FILE_PATH")))
 
 logger = get_logger("audit_service")
 
-elastic_index_name = config.elasticsearch.index_name
+
+env_vars = load_env_vars()
+app_config = ConfigManager.load_config(env_vars.config_file_path)
 
 elastic = CustomElasticsearch(
-    hosts=[httpurl_to_str(url) for url in config.elasticsearch.hosts],
+    hosts=[f"{env_vars.elastic_url}"],
     http_auth=(
-        (config.elasticsearch.username, config.elasticsearch.password)
-        if config.elasticsearch.username and config.elasticsearch.password
+        (env_vars.elastic_username, env_vars.elastic_password)
+        if env_vars.elastic_username and env_vars.elastic_password
         else None
     ),
 )
@@ -49,7 +49,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
         _ : Just a placeholder.
     """
     logger.info("Audit log API starting up")
-    elastic.ensure_ready(elastic_index_name)
+    elastic.ensure_ready(env_vars.elastic_index_name)
     yield
     logger.info("Audit log API shutting down")
     # Do something here...
@@ -66,7 +66,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-add_middleware(app, config)
+add_middleware(app, app_config)
 
 
 @app.exception_handler(RequestValidationError)
@@ -120,7 +120,7 @@ async def create_audit_log_entry(audit_log: Union[Any, List[Any]] = Body(...)) -
     """
     return await process_audit_logs(
         elastic,
-        cast(str, elastic_index_name),
+        cast(str, env_vars.elastic_index_name),
         [audit_log] if not isinstance(audit_log, list) else audit_log,
     )
 
@@ -140,7 +140,7 @@ async def create_fake_audit_log_entries(
     """
     return await process_audit_logs(
         elastic,
-        cast(str, elastic_index_name),
+        cast(str, env_vars.elastic_index_name),
         generate_audit_log_entries_with_fake_data(settings),
     )
 
@@ -166,7 +166,7 @@ def search_audit_log_entries(
     """
     try:
         elastic_filters = ElasticSearchQueryBuilder(
-            using=elastic, index=elastic_index_name
+            using=elastic, index=env_vars.elastic_index_name
         )
         result = elastic_filters.process_parameters(params or SearchParamsV2())
 

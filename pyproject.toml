@@ -1,9 +1,11 @@
 [tool.poetry]
-name = "audit-logger"
-version = "0.5.0"
-description = ""
+name = "log-audits-to-elasticsearch"
+version = "1.0.0"
+description = "Log Audits To Elasticsearch"
 authors = ["Robin Schulz <hello@rschu.me>"]
 readme = "README.md"
+homepage = "https://github.com/bulletinmybeard/log-audits-to-elasticsearch"
+repository = "https://github.com/bulletinmybeard/log-audits-to-elasticsearch"
 
 [tool.poetry.dependencies]
 python = "^3.12"
