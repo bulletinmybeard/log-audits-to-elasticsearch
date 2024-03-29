@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     environment:
-      - CONFIG_FILE_PATH=/app/config.yaml
+      - CONFIG_FILE_PATH=${CONFIG_FILE_PATH}
       - ELASTIC_USERNAME=${ELASTIC_USERNAME}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_URL=${ELASTIC_URL}
