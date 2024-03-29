@@ -18,9 +18,4 @@ jobs:
         run: pip install pre-commit
 
       - name: Run specific hooks
-        run: |
-          pre-commit run trailing-whitespace
-          pre-commit run end-of-file-fixer
-          pre-commit run check-yaml
-          pre-commit run check-added-large-files
-          pre-commit run black 
+        run: pre-commit run --all-files

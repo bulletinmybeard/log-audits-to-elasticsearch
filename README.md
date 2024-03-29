@@ -1,6 +1,23 @@
-# service-audit
+# log-audits-to-elasticsearch
 
-Python REST API service for audit logging, which is currently under development.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![Application Version](https://img.shields.io/badge/App-v1.0.0-green)
+![Elasticsearch Version](https://img.shields.io/badge/Elasticsearch-v7.17.10-green)
+[![Pre-Commit Status](https://github.com/bulletinmybeard/log-audits-to-elasticsearch/actions/workflows/ci.yml/badge.svg)](https://github.com/bulletinmybeard/log-audits-to-elasticsearch/actions/workflows/ci.yml)
+
+
+Log Audits To Elasticsearch Using Python FastAPI.
+
+## Table of Contents
+* [Introduction](#introduction)
+* [Prerequisites](#prerequisites)
+  * [Docker](#docker)
+  * [Poetry](#poetry)
+  * [Python](#python)
+* [Usage](#usage)
+* [API Endpoints](#api-endpoints)
+* [License](#license)
+
 
 > **WORK IN PROGRESS!!!!!**
 
