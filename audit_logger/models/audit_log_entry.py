@@ -1,13 +1,14 @@
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import Field
 
 from audit_logger.models.actor_details import ActorDetails
+from audit_logger.models.custom_base import CustomBaseModel
 from audit_logger.models.resource import ResourceDetails
 from audit_logger.models.server_details import ServerDetails
 
 
-class AuditLogEntry(BaseModel):
+class AuditLogEntry(CustomBaseModel):
     timestamp: Optional[str] = Field(
         default=None,
         description="The date and time when the event occurred, in ISO 8601 format.",
@@ -44,7 +45,3 @@ class AuditLogEntry(BaseModel):
     meta: Dict[str, Any] = Field(
         default={}, description="Optional metadata about the event."
     )
-
-    # Forbid extra fields and raise an exception if any are found.
-    class Config:
-        extra = Extra.forbid

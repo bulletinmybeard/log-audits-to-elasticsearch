@@ -1,16 +1,15 @@
 from typing import Optional
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import Field
+
+from audit_logger.models.custom_base import CustomBaseModel
 
 
-class RandomAuditLogSettings(BaseModel):
+class BulkAuditLogOptions(CustomBaseModel):
     bulk_count: Optional[int] = Field(
         1,
         ge=1,
         le=350,
         description="Specifies the number of fake audit log entries to generate.",
+        alias="bulk_limit",
     )
-
-    # Forbid extra fields and raise an exception if any are found.
-    class Config:
-        extra = Extra.forbid

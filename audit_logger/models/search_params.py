@@ -3,14 +3,15 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Extra, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from audit_logger.models.custom_base import CustomBaseModel
 from audit_logger.utils import is_valid_ip_v4_address, validate_date
 
 logger = logging.getLogger("audit_logger")
 
 
-class MaxResultsMixin(BaseModel):
+class MaxResultsMixin(CustomBaseModel):
     max_results: Optional[int] = Field(
         500,
         ge=1,
@@ -70,7 +71,7 @@ class AggregationTypeEnum(str, Enum):
     DATE_HISTOGRAM = "date_histogram"
 
 
-class SearchFilterParams(BaseModel):
+class SearchFilterParams(CustomBaseModel):
     field: FieldIdentifierEnum = Field(
         default=None,
         description="",
@@ -135,16 +136,16 @@ class SearchFilterParams(BaseModel):
         return v
 
 
-class AggregationFilterParams(BaseModel):
+class AggregationFilterParams(CustomBaseModel):
     range: Optional[Dict[str, Dict[str, str]]]
 
 
-class SubAggregationConfig(BaseModel):
+class SubAggregationConfig(CustomBaseModel):
     type: AggregationTypeEnum
     field: FieldIdentifierEnum
 
 
-class AggregationSetup(MaxResultsMixin, BaseModel):
+class AggregationSetup(MaxResultsMixin, CustomBaseModel):
     type: AggregationTypeEnum = Field(
         ..., description="Specifies the type of aggregation."
     )
@@ -161,7 +162,7 @@ class AggregationSetup(MaxResultsMixin, BaseModel):
     )
 
 
-class SearchParamsV2(MaxResultsMixin, BaseModel):
+class SearchParamsV2(MaxResultsMixin, CustomBaseModel):
     fields: Optional[List[FieldIdentifierEnum]] = Field(
         default=None,
         description="Fields to include in results. Empty includes all fields.",
@@ -185,10 +186,6 @@ class SearchParamsV2(MaxResultsMixin, BaseModel):
         default=None,
         description="Aggregations to apply for data summarization/analysis.",
     )
-
-    # Forbid extra fields and raise an exception if any are found.
-    class Config:
-        extra = Extra.forbid
 
     @field_validator("sort_order")
     def sort_order_valid(cls, v: Optional[SortOrderEnum]) -> Optional[SortOrderEnum]:

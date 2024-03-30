@@ -38,7 +38,7 @@ async def validation_exception_handler(
 
 
 class BulkLimitExceededError(HTTPException):
-    def __init__(self, limit: int):
+    def __init__(self, limit: int) -> None:
         super().__init__(
             status_code=400,
             detail=f"The maximum number of items allowed in a bulk operation is {limit}.",

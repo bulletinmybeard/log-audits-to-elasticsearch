@@ -14,8 +14,8 @@ from audit_logger.exceptions import BulkLimitExceededError, validation_exception
 from audit_logger.middlewares import add_middleware
 from audit_logger.models import (
     AuditLogEntry,
+    BulkAuditLogOptions,
     GenericResponse,
-    RandomAuditLogSettings,
     SearchParamsV2,
     SearchResults,
 )
@@ -109,7 +109,7 @@ async def create_bulk_audit_log_entries(
     Raises:
         Union[HTTPException, BulkLimitExceededError]
     """
-    bulk_limit = 250
+    bulk_limit = 350
     if len(audit_logs) > bulk_limit:
         raise BulkLimitExceededError(limit=bulk_limit)
     return await process_audit_logs(
@@ -121,7 +121,7 @@ async def create_bulk_audit_log_entries(
 
 @app.post("/create/create-bulk-auto")
 async def create_fake_audit_log_entries(
-    settings: RandomAuditLogSettings,
+    options: BulkAuditLogOptions,
 ) -> GenericResponse:
     """
     Generates and stores a single random audit log entry.
@@ -135,7 +135,7 @@ async def create_fake_audit_log_entries(
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        generate_audit_log_entries_with_fake_data(settings),
+        generate_audit_log_entries_with_fake_data(options),
     )
 
 

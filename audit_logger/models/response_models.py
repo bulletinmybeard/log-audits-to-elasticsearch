@@ -1,12 +1,13 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from audit_logger.models.actor_details import ActorDetails
+from audit_logger.models.custom_base import CustomBaseModel
 from audit_logger.models.resource import ResourceDetails
 
 
-class LogEntryDetails(BaseModel):
+class LogEntryDetails(CustomBaseModel):
     timestamp: Optional[str] = Field(
         default=None, description="The timestamp of the log entry."
     )
@@ -44,7 +45,7 @@ class LogEntryDetails(BaseModel):
     )
 
 
-class SearchResults(BaseModel):
+class SearchResults(CustomBaseModel):
     hits: int = Field(default=0, description="The number of hits for the search query.")
     docs: List[Any] = Field(
         default=[], description="A list of documents that match the search query."
@@ -54,7 +55,7 @@ class SearchResults(BaseModel):
     )
 
 
-class GenericResponse(BaseModel):
+class GenericResponse(CustomBaseModel):
     status: str = Field(default=None, description="The status of the response.")
     success_count: int = Field(
         default=None, description="The number of successful items in the response."

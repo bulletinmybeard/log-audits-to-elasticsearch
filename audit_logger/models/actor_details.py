@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, IPvAnyAddress
+from pydantic import Field, IPvAnyAddress
+
+from audit_logger.models.custom_base import CustomBaseModel
 
 
 class ActorType(str, Enum):
@@ -9,7 +11,7 @@ class ActorType(str, Enum):
     SYSTEM = "system"
 
 
-class ActorDetails(BaseModel):
+class ActorDetails(CustomBaseModel):
     identifier: Optional[str] = Field(
         default=None,
         description="Unique identifier of the actor. "

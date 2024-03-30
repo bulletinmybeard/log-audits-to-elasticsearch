@@ -1,9 +1,11 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import Field, HttpUrl, field_validator
+
+from audit_logger.models.custom_base import CustomBaseModel
 
 
-class EnvVars(BaseModel):
+class EnvVars(CustomBaseModel):
     elastic_index_name: str = Field(...)
     elastic_url: str = Field(...)
     elastic_username: Optional[str] = Field(None)

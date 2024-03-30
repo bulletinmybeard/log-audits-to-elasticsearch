@@ -8,14 +8,14 @@ from typing import Any, Dict, List
 from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
 from fastapi import HTTPException
-from pydantic import HttpUrl, ValidationError
+from pydantic import ValidationError
 
 from audit_logger.custom_logger import get_logger
 from audit_logger.models import (
     ActorDetails,
     AuditLogEntry,
+    BulkAuditLogOptions,
     GenericResponse,
-    RandomAuditLogSettings,
     ResourceDetails,
 )
 from audit_logger.models.env_vars import EnvVars
@@ -98,7 +98,9 @@ def is_valid_ip_v4_address(ip_address: str) -> bool:
         return False
 
 
-def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dict]:
+def create_bulk_operations(
+    index_name: str, log_entries: List[AuditLogEntry]
+) -> List[Dict]:
     """
     This bulk helper function prepares a list of operations for the Elasticsearch bulk API
     based on the provided log entries.
@@ -129,7 +131,7 @@ def create_bulk_operations(index_name: str, log_entries: List[Dict]) -> List[Dic
 
 
 def generate_audit_log_entries_with_fake_data(
-    settings: RandomAuditLogSettings,
+    settings: BulkAuditLogOptions,
 ) -> List[Dict]:
     """
     Generates a random audit log entry using the Faker library.
@@ -137,12 +139,12 @@ def generate_audit_log_entries_with_fake_data(
     Returns:
     - List[Dict]: A list of audit log entries with fake data.
     """
-    return [generate_fake_log_entry().dict() for _ in range(settings.bulk_count)]
+    return [generate_log_entry().dict() for _ in range(settings.bulk_count)]
 
 
 # ) -> GenericResponse:
 async def process_audit_logs(
-    elastic: Elasticsearch, elastic_index_name: str, log_entries: List[Dict]
+    elastic: Elasticsearch, elastic_index_name: str, log_entries: List[AuditLogEntry]
 ) -> Any:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
@@ -150,7 +152,7 @@ async def process_audit_logs(
     Args:
     - elastic: An instance of the Elasticsearch client.
     - elastic_index_name (str): The name of the Elasticsearch index.
-    - log_entries (List[Dict]): A list of audit log entries to be processed.
+    - log_entries (List[AuditLogEntry]): A list of audit log entries to be processed.
 
     Returns:
     - GenericResponse
@@ -207,7 +209,7 @@ def validate_date(date_str: str) -> bool:
     return False
 
 
-def generate_fake_log_entry() -> AuditLogEntry:
+def generate_log_entry() -> AuditLogEntry:
     """Create a fake audit log entry using the Faker library."""
     return AuditLogEntry(
         timestamp=fake.date_time_this_year().isoformat(),
@@ -244,10 +246,6 @@ def generate_fake_log_entry() -> AuditLogEntry:
             "response_time_ms": fake.random_int(min=1, max=1000),
         },
     )
-
-
-def httpurl_to_str(url: HttpUrl) -> str:
-    return str(url)
 
 
 def load_env_vars() -> EnvVars:

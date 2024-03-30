@@ -1,9 +1,11 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, IPvAnyAddress
+from pydantic import Field, IPvAnyAddress
+
+from audit_logger.models.custom_base import CustomBaseModel
 
 
-class ServerDetails(BaseModel):
+class ServerDetails(CustomBaseModel):
     hostname: Optional[str] = Field(
         default=None,
         description="Hostname of the server where the event occurred.",

@@ -1,9 +1,11 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from audit_logger.models.custom_base import CustomBaseModel
 
 
-class CORSSettings(BaseModel):
+class CORSSettings(CustomBaseModel):
     allow_origins: Optional[List[str]] = Field(
         default=["*"],
         description="List of allowed origin URLs. Use '*' to allow all origins.",
@@ -22,11 +24,11 @@ class CORSSettings(BaseModel):
     )
 
 
-class APIMiddlewares(BaseModel):
+class APIMiddlewares(CustomBaseModel):
     cors: CORSSettings = Field(description="CORS middleware settings")
 
 
-class AppConfig(BaseModel):
+class AppConfig(CustomBaseModel):
     middlewares: Optional[APIMiddlewares] = Field(
         description="API Middlewares settings",
     )
