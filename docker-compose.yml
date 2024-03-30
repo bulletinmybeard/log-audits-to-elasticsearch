@@ -7,13 +7,6 @@ services:
       dockerfile: docker/audit-logger/Dockerfile
     env_file:
       - .env
-    environment:
-      - CONFIG_FILE_PATH=${CONFIG_FILE_PATH}
-      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - ELASTIC_URL=${ELASTIC_URL}
-      - ELASTIC_INDEX_NAME=${ELASTIC_INDEX_NAME}
-      - ELASTIC_HOSTS=${ELASTIC_HOSTS}
     restart: unless-stopped
     volumes:
       - ./:/app
@@ -32,12 +25,6 @@ services:
       - .env
     environment:
       - discovery.type=single-node
-      - PIPELINE_WORKERS=4
-      - LOG_LEVEL=debug
-      - MONITORING_ENABLED=enabled
-      - xpack.security.enabled=true
-      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     ulimits:
       memlock:
         soft: -1
@@ -63,8 +50,6 @@ services:
       - .env
     environment:
       - elasticsearch.hosts=elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME}
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_USERNAME}
     restart: unless-stopped
     volumes:
       - sa_kibana_data:/usr/share/kibana/data

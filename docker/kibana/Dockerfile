@@ -3,6 +3,10 @@ FROM arm64v8/kibana:${KIBANA_VERSION}
 
 USER root
 
+ENV \
+    ELASTICSEARCH_USERNAME=${ELASTIC_USERNAME} \
+    ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+
 RUN mkdir -p /opt/shell-scripts
 
 COPY ./*.sh /opt/shell-scripts
