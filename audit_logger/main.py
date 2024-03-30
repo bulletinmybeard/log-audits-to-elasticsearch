@@ -142,7 +142,7 @@ async def create_fake_audit_log_entries(
 @app.post("/search")
 def search_audit_log_entries(
     params: Optional[SearchParamsV2] = Body(default=None),
-) -> Any:
+) -> SearchResults:
     """
     Performs a search query against audit log entries stored in Elasticsearch based on
     a set of search parameters.

@@ -6,7 +6,6 @@ from fastapi import HTTPException
 
 from audit_logger.custom_logger import get_logger
 from audit_logger.models import (
-    AggregationSetup,
     AggregationTypeEnum,
     FieldIdentifierEnum,
     FilterTypeEnum,
