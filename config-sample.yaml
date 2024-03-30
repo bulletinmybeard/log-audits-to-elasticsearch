@@ -1,22 +1,14 @@
-elasticsearch:
-  hosts:
-    - http://elasticsearch:9200
-  index_name: audit_log
-  username: elastic
-  password: elastic
-
-api:
-  middlewares:
-    cors:
-      allow_origins:
-        - my-domain.me
-        - my-domain-com
-      allow_credentials: true
-      allow_methods:
-        - GET
-        - PUT
-        - POST
-        - DELETE
-      allow_headers:
-        - content-type
-        - user-agent
+middlewares:
+  cors:
+    allow_origins:
+      - my-domain.me
+      - my-domain-com
+    allow_credentials: true
+    allow_methods:
+      - GET
+      - PUT
+      - POST
+      - DELETE
+    allow_headers:
+      - content-type
+      - user-agent
