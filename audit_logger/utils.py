@@ -23,7 +23,7 @@ from audit_logger.models.server_details import ServerDetails
 
 fake = Faker()
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 # Regular expression to validate date strings in the format "YYYY-MM-DDTHH:MM:SSZ"
 # where everything, except for the year, is optional.

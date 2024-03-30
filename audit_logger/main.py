@@ -26,7 +26,7 @@ from audit_logger.utils import (
     process_audit_logs,
 )
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 env_vars = load_env_vars()

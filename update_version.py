@@ -8,7 +8,7 @@ import toml
 
 from audit_logger.custom_logger import get_logger
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 semver_regex = r"^\d+\.\d+\.\d+$"

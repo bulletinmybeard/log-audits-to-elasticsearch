@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from audit_logger.custom_logger import get_logger
 from audit_logger.models import AppConfig
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 class ConfigManager:

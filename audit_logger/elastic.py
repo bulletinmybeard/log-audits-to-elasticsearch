@@ -11,7 +11,7 @@ from elasticsearch.exceptions import (
 
 from audit_logger.custom_logger import get_logger
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 class CustomElasticsearch(Elasticsearch):
