@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Extra, Field
 
 from audit_logger.models.actor_details import ActorDetails
 from audit_logger.models.resource import ResourceDetails
@@ -44,3 +44,7 @@ class AuditLogEntry(BaseModel):
     meta: Dict[str, Any] = Field(
         default={}, description="Optional metadata about the event."
     )
+
+    # Forbid extra fields and raise an exception if any are found.
+    class Config:
+        extra = Extra.forbid

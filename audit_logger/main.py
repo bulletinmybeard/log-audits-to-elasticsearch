@@ -1,7 +1,6 @@
-import os
 import traceback
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -11,17 +10,19 @@ from audit_logger.config_manager import ConfigManager
 from audit_logger.custom_logger import get_logger
 from audit_logger.elastic import CustomElasticsearch
 from audit_logger.elastic_filters import ElasticSearchQueryBuilder
+from audit_logger.exceptions import BulkLimitExceededError, validation_exception_handler
 from audit_logger.middlewares import add_middleware
 from audit_logger.models import (
+    AuditLogEntry,
     GenericResponse,
     RandomAuditLogSettings,
     SearchParamsV2,
-    SearchResults
+    SearchResults,
 )
 from audit_logger.utils import (
     generate_audit_log_entries_with_fake_data,
+    load_env_vars,
     process_audit_logs,
-    load_env_vars
 )
 
 logger = get_logger("audit_service")
@@ -57,60 +58,26 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     debug=True,
-    title="Audit Logging Service",
-    summary="Service for logging security incidents and other audit events",
-    description="This service provides an API for "
-    "logging security incidents and other audit events.",
     version="0.5.0",
     redirect_slashes=True,
     lifespan=lifespan,
 )
 
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
 add_middleware(app, app_config)
 
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(
-    _: Any, exc: RequestValidationError
-) -> JSONResponse:
-    """
-    Handles validation errors.
-
-    Args:
-        _ : The request object which is not used in this handler but it's part of the
-            signature required by FastAPI.
-        exc : The `RequestValidationError` instance containing details about the validation
-              checks.
-
-    Returns:
-        A `JSONResponse` object with a 422 status code and a json body containing the simplified
-        list of validation errors.
-    """
-    errors = exc.errors()
-    simplified_errors = [
-        {
-            "msg": error["msg"],
-            "type": error["type"],
-            "option": error["loc"][1] if len(error["loc"]) > 1 else None,
-        }
-        for error in errors
-    ]
-    return JSONResponse(
-        status_code=422,
-        content={"detail": simplified_errors},
-    )
-
-
 @app.post("/create")
-async def create_audit_log_entry(audit_log: Union[Any, List[Any]] = Body(...)) -> Any:
+async def create_audit_log_entry(
+    audit_log: AuditLogEntry = Body(...),
+) -> GenericResponse:
     """
-    Receives an audit log entry or a list of entries, validates them, and processes
-    them to be stored in Elasticsearch.
+    Receives an audit log entry, validates it, and processes
+    it to be stored in Elasticsearch.
 
     Args:
-        audit_log (Union[AuditLogEntry, List[AuditLogEntry]]): The audit log entry or entries
-            to be created. This can either be a single `AuditLogEntry` object or a list of such
-            objects.
+        audit_log AuditLogEntry: The audit log entry to be created.
 
     Returns:
         CreateResponse
@@ -121,11 +88,38 @@ async def create_audit_log_entry(audit_log: Union[Any, List[Any]] = Body(...)) -
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        [audit_log] if not isinstance(audit_log, list) else audit_log,
+        [audit_log.dict()],
     )
 
 
-@app.post("/create/auto-bulk")
+@app.post("/create-bulk")
+async def create_bulk_audit_log_entries(
+    audit_logs: List[AuditLogEntry] = Body(...),
+) -> GenericResponse:
+    """
+    Receives one or multiple audit log entries, validates them, and processes
+    them to be stored in Elasticsearch.
+
+    Args:
+        audit_logs List[AuditLogEntry]: The audit log entries to be created.
+
+    Returns:
+        CreateResponse
+
+    Raises:
+        Union[HTTPException, BulkLimitExceededError]
+    """
+    bulk_limit = 250
+    if len(audit_logs) > bulk_limit:
+        raise BulkLimitExceededError(limit=bulk_limit)
+    return await process_audit_logs(
+        elastic,
+        cast(str, env_vars.elastic_index_name),
+        [dict(model.dict()) for model in audit_logs],
+    )
+
+
+@app.post("/create/create-bulk-auto")
 async def create_fake_audit_log_entries(
     settings: RandomAuditLogSettings,
 ) -> GenericResponse:
@@ -169,7 +163,6 @@ def search_audit_log_entries(
             using=elastic, index=env_vars.elastic_index_name
         )
         result = elastic_filters.process_parameters(params or SearchParamsV2())
-
         return SearchResults(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )

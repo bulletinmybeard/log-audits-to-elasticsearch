@@ -1,6 +1,6 @@
 import ipaddress
-import re
 import os
+import re
 import traceback
 from datetime import datetime
 from typing import Any, Dict, List
@@ -16,10 +16,10 @@ from audit_logger.models import (
     AuditLogEntry,
     GenericResponse,
     RandomAuditLogSettings,
-    ResourceDetails
+    ResourceDetails,
 )
-from audit_logger.models.server_details import ServerDetails
 from audit_logger.models.env_vars import EnvVars
+from audit_logger.models.server_details import ServerDetails
 
 fake = Faker()
 

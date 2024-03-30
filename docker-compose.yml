@@ -23,8 +23,7 @@ services:
     ports:
       - "8000:8000"
     networks:
-      audit_logger:
-        ipv4_address: 172.70.0.2
+      - audit_logger
 
   elasticsearch:
     container_name: elasticsearch
@@ -51,8 +50,7 @@ services:
       - "9200:9200"
       - "9300:9300"
     networks:
-      audit_logger:
-        ipv4_address: 172.70.0.3
+      - audit_logger
 
   kibana:
     container_name: kibana
@@ -74,8 +72,7 @@ services:
     ports:
       - "5601:5601"
     networks:
-      audit_logger:
-        ipv4_address: 172.70.0.4
+      - audit_logger
     depends_on:
       - elasticsearch
 
@@ -98,8 +95,3 @@ volumes:
 networks:
   audit_logger:
     driver: bridge
-    external: true
-    ipam:
-      config:
-        - subnet: 172.70.0.0/16
-          gateway: 172.70.0.1
