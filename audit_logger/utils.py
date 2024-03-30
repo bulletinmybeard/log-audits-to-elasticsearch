@@ -5,9 +5,9 @@ import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
-from elasticsearch import Elasticsearch, SerializationError, helpers
+from elasticsearch import Elasticsearch, SerializationError, helpers, ConnectionError
 from faker import Faker
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from pydantic import ValidationError
 
 from audit_logger.custom_logger import get_logger
@@ -146,7 +146,7 @@ def generate_audit_log_entries_with_fake_data(
 async def process_audit_logs(
     elastic: Elasticsearch,
     elastic_index_name: str,
-    log_entries: List[Union[Dict, AuditLogEntry]],
+    log_entries: Union[AuditLogEntry, List[Union[Dict, AuditLogEntry]]]
 ) -> Any:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
@@ -162,17 +162,26 @@ async def process_audit_logs(
     Raises:
     - HTTPException
     """
+
+    is_bulk_operation = isinstance(log_entries, list)
+    if not is_bulk_operation:
+        log_entries = [log_entries.dict()]
+
     try:
         operations = create_bulk_operations(elastic_index_name, log_entries)
         success_count, failed = helpers.bulk(elastic, operations)
-        failed_count = len(failed) if isinstance(failed, list) else failed
         failed_items = failed if isinstance(failed, list) else []
-        return GenericResponse(
-            status="success",
-            success_count=success_count,
-            failed_count=failed_count,
-            failed_items=failed_items,
-        )
+
+        if len(failed_items) > 0:
+            raise HTTPException(status_code=500, detail=f"Failed to process audit logs: {str(failed_items)}")
+
+        if is_bulk_operation:
+            return GenericResponse(
+                status="success",
+                success_count=success_count,
+            )
+
+        return status.HTTP_201_CREATED
     except SerializationError as e:
         logger.error(
             "SerializationError: %s\nFull stack trace:\n%s", e, traceback.format_exc()

@@ -1,6 +1,6 @@
 import traceback
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast, Union
 
 from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -74,9 +74,10 @@ async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
 
 
 @app.post("/create", dependencies=[Depends(verify_api_key)])
+# ) -> GenericResponse:
 async def create_audit_log_entry(
-    audit_log: AuditLogEntry = Body(...),
-) -> GenericResponse:
+    audit_log: AuditLogEntry = Body(...)
+) -> Any:
     """
     Receives an audit log entry, validates it, and processes
     it to be stored in Elasticsearch.
@@ -93,13 +94,13 @@ async def create_audit_log_entry(
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        [audit_log.dict()],
+        audit_log
     )
 
 
 @app.post("/create-bulk", dependencies=[Depends(verify_api_key)])
 async def create_bulk_audit_log_entries(
-    audit_logs: List[AuditLogEntry] = Body(...),
+    audit_logs: List[AuditLogEntry] = Body(...)
 ) -> GenericResponse:
     """
     Receives one or multiple audit log entries, validates them, and processes
@@ -117,15 +118,16 @@ async def create_bulk_audit_log_entries(
     bulk_limit = 350
     if len(audit_logs) > bulk_limit:
         raise BulkLimitExceededError(limit=bulk_limit)
+
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        [dict(model.dict()) for model in audit_logs],
+        [dict(model.dict()) for model in audit_logs]
     )
 
 
 @app.post("/create/create-bulk-auto", dependencies=[Depends(verify_api_key)])
-async def create_fake_audit_log_entries(
+async def create_random_audit_log_entries(
     options: BulkAuditLogOptions,
 ) -> GenericResponse:
     """
@@ -140,13 +142,13 @@ async def create_fake_audit_log_entries(
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        generate_audit_log_entries_with_fake_data(options),
+        generate_audit_log_entries_with_fake_data(options)
     )
 
 
 @app.post("/search", dependencies=[Depends(verify_api_key)])
 def search_audit_log_entries(
-    params: Optional[SearchParamsV2] = Body(default=None),
+    params: Optional[SearchParamsV2] = Body(default=None)
 ) -> SearchResults:
     """
     Performs a search query against audit log entries stored in Elasticsearch based on
@@ -177,7 +179,7 @@ def search_audit_log_entries(
 
 
 @app.get("/health", response_class=JSONResponse)
-async def health_check() -> Dict[str, str]:
+async def health_check() -> Dict[str, Union[str, bool]]:
     """
     Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready.
 
@@ -188,7 +190,24 @@ async def health_check() -> Dict[str, str]:
         HTTPException
     """
     try:
-        elastic.check_health()
-        return {"status": "OK"}
+        elastic_reachable = False
+        try:
+            elastic.check_health()
+            elastic_reachable = True
+        except ConnectionError:
+            pass
+
+        elastic_index_exists = False
+        try:
+            elastic.check_index_exists(env_vars.elastic_index_name)
+            elastic_index_exists = True
+        except ConnectionError:
+            pass
+
+        return {
+            "status": "OK",
+            "elastic_reachable": elastic_reachable,
+            "elastic_index_exists": elastic_index_exists,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

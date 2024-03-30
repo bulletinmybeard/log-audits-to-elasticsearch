@@ -60,9 +60,9 @@ class GenericResponse(CustomBaseModel):
     success_count: int = Field(
         default=None, description="The number of successful items in the response."
     )
-    failed_count: int = Field(
-        default=None, description="The number of failed items in the response."
+    failed_count: Optional[int] = Field(
+        default=0, description="The number of failed items in the response."
     )
-    failed_items: List[Dict] = Field(
+    failed_items: Optional[List[Dict]] = Field(
         default=[], description="A list of items that failed."
     )
