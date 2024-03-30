@@ -3,7 +3,7 @@ import os
 import re
 import traceback
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
@@ -144,7 +144,9 @@ def generate_audit_log_entries_with_fake_data(
 
 # ) -> GenericResponse:
 async def process_audit_logs(
-    elastic: Elasticsearch, elastic_index_name: str, log_entries: List[AuditLogEntry]
+    elastic: Elasticsearch,
+    elastic_index_name: str,
+    log_entries: List[Union[Dict, AuditLogEntry]],
 ) -> Any:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
