@@ -46,15 +46,11 @@ elastic = CustomElasticsearch(
 async def lifespan(_: Any) -> AsyncGenerator[None, None]:
     """
     An asynchronous context manager for managing the lifecycle of the audit log API.
-
-    Args:
-        _ : Just a placeholder.
     """
     logger.info("Audit log API starting up")
     elastic.ensure_ready(env_vars.elastic_index_name)
     yield
     logger.info("Audit log API shutting down")
-    # Do something here...
 
 
 app = FastAPI(
@@ -71,7 +67,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 add_middleware(app, app_config)
 
 
-async def verify_api_key(api_key: str = Depends(api_key_header)):
+async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
     if api_key != app_config.authentication.api_key:
         raise HTTPException(status_code=401, detail="Invalid API-Key")
     return api_key
