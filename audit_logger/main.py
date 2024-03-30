@@ -171,7 +171,7 @@ def search_audit_log_entries(
         raise HTTPException(status_code=500, detail="Failed to query audit logs")
 
 
-@app.get("/healthcheck", response_class=JSONResponse)
+@app.get("/health", response_class=JSONResponse)
 async def health_check() -> Dict[str, str]:
     """
     Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready.

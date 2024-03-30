@@ -61,7 +61,7 @@ HEALTHCHECK \
     --timeout=10s \
     --start-period=1m \
     --retries=3 \
-    CMD if [ "$ENABLE_HEALTHCHECK" = "true" ]; then curl --fail http://127.0.0.1:8000/healthcheck || exit 1; else exit 0; fi
+    CMD if [ "$ENABLE_HEALTHCHECK" = "true" ]; then curl --fail http://127.0.0.1:8000/health || exit 1; else exit 0; fi
 
 COPY pyproject.toml poetry.lock ./
 RUN \
