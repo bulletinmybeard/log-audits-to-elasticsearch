@@ -2,9 +2,10 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 
 from audit_logger.config_manager import ConfigManager
 from audit_logger.custom_logger import get_logger
@@ -63,12 +64,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+api_key_header = APIKeyHeader(name="X-API-Key")
+
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 add_middleware(app, app_config)
 
 
-@app.post("/create")
+async def verify_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != app_config.authentication.api_key:
+        raise HTTPException(status_code=401, detail="Invalid API-Key")
+    return api_key
+
+
+@app.post("/create", dependencies=[Depends(verify_api_key)])
 async def create_audit_log_entry(
     audit_log: AuditLogEntry = Body(...),
 ) -> GenericResponse:
@@ -92,7 +101,7 @@ async def create_audit_log_entry(
     )
 
 
-@app.post("/create-bulk")
+@app.post("/create-bulk", dependencies=[Depends(verify_api_key)])
 async def create_bulk_audit_log_entries(
     audit_logs: List[AuditLogEntry] = Body(...),
 ) -> GenericResponse:
@@ -119,7 +128,7 @@ async def create_bulk_audit_log_entries(
     )
 
 
-@app.post("/create/create-bulk-auto")
+@app.post("/create/create-bulk-auto", dependencies=[Depends(verify_api_key)])
 async def create_fake_audit_log_entries(
     options: BulkAuditLogOptions,
 ) -> GenericResponse:
@@ -139,7 +148,7 @@ async def create_fake_audit_log_entries(
     )
 
 
-@app.post("/search")
+@app.post("/search", dependencies=[Depends(verify_api_key)])
 def search_audit_log_entries(
     params: Optional[SearchParamsV2] = Body(default=None),
 ) -> SearchResults:

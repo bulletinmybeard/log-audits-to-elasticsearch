@@ -1,3 +1,5 @@
+authentication:
+  api_key: "change-me-plz"
 middlewares:
   cors:
     allow_origins:

@@ -28,7 +28,14 @@ class APIMiddlewares(CustomBaseModel):
     cors: CORSSettings = Field(description="CORS middleware settings")
 
 
+class Authentication(CustomBaseModel):
+    api_key: str = Field(description="X-API Key")
+
+
 class AppConfig(CustomBaseModel):
     middlewares: Optional[APIMiddlewares] = Field(
-        description="API Middlewares settings",
+        description="API middlewares settings",
+    )
+    authentication: Authentication = Field(
+        description="API authentication settings",
     )

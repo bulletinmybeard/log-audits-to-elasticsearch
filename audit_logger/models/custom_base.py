@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 
 
 class CustomBaseModel(BaseModel):
@@ -9,4 +9,4 @@ class CustomBaseModel(BaseModel):
 
     # Forbid extra fields and raise an exception if any are found.
     class Config:
-        extra = Extra.forbid
+        extra = "forbid"
