@@ -5,7 +5,7 @@ import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
-from elasticsearch import Elasticsearch, SerializationError, helpers, ConnectionError
+from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -146,7 +146,7 @@ def generate_audit_log_entries_with_fake_data(
 async def process_audit_logs(
     elastic: Elasticsearch,
     elastic_index_name: str,
-    log_entries: Union[AuditLogEntry, List[Union[Dict, AuditLogEntry]]]
+    log_entries: Union[AuditLogEntry, List[Union[Dict, AuditLogEntry]]],
 ) -> Any:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
@@ -173,7 +173,10 @@ async def process_audit_logs(
         failed_items = failed if isinstance(failed, list) else []
 
         if len(failed_items) > 0:
-            raise HTTPException(status_code=500, detail=f"Failed to process audit logs: {str(failed_items)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to process audit logs: {str(failed_items)}",
+            )
 
         if is_bulk_operation:
             return GenericResponse(

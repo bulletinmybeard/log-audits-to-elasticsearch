@@ -1,6 +1,6 @@
 import traceback
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, cast, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
 
 from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -75,9 +75,7 @@ async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
 
 @app.post("/create", dependencies=[Depends(verify_api_key)])
 # ) -> GenericResponse:
-async def create_audit_log_entry(
-    audit_log: AuditLogEntry = Body(...)
-) -> Any:
+async def create_audit_log_entry(audit_log: AuditLogEntry = Body(...)) -> Any:
     """
     Receives an audit log entry, validates it, and processes
     it to be stored in Elasticsearch.
@@ -92,15 +90,13 @@ async def create_audit_log_entry(
         HTTPException
     """
     return await process_audit_logs(
-        elastic,
-        cast(str, env_vars.elastic_index_name),
-        audit_log
+        elastic, cast(str, env_vars.elastic_index_name), audit_log
     )
 
 
 @app.post("/create-bulk", dependencies=[Depends(verify_api_key)])
 async def create_bulk_audit_log_entries(
-    audit_logs: List[AuditLogEntry] = Body(...)
+    audit_logs: List[AuditLogEntry] = Body(...),
 ) -> GenericResponse:
     """
     Receives one or multiple audit log entries, validates them, and processes
@@ -122,7 +118,7 @@ async def create_bulk_audit_log_entries(
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        [dict(model.dict()) for model in audit_logs]
+        [dict(model.dict()) for model in audit_logs],
     )
 
 
@@ -142,13 +138,13 @@ async def create_random_audit_log_entries(
     return await process_audit_logs(
         elastic,
         cast(str, env_vars.elastic_index_name),
-        generate_audit_log_entries_with_fake_data(options)
+        generate_audit_log_entries_with_fake_data(options),
     )
 
 
 @app.post("/search", dependencies=[Depends(verify_api_key)])
 def search_audit_log_entries(
-    params: Optional[SearchParamsV2] = Body(default=None)
+    params: Optional[SearchParamsV2] = Body(default=None),
 ) -> SearchResults:
     """
     Performs a search query against audit log entries stored in Elasticsearch based on
