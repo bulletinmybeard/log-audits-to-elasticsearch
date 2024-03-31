@@ -13,39 +13,39 @@ from audit_logger.models import (
     SearchParamsV2,
 )
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 class ElasticSearchQueryBuilder(Search):
     elastic_index_name: str
+    s: Search
 
     def __init__(self, using: Elasticsearch, index: str, **kwargs: Any) -> None:
         super().__init__(using=using, index=index, **kwargs)
         self.elastic_index_name = index
+        self.s = Search(using=using, index=index)
 
     def process_parameters(self, params: SearchParamsV2) -> Dict[str, Any]:
-        s = self
-
         # Set the number of documents to be returned.
-        s = s.extra(from_=0, size=params.max_results, track_total_hits=True)
+        self.s = self.extra(from_=0, size=params.max_results, track_total_hits=True)
 
         # Sort the documents based on the `sort_by` (field) and sort_order (asc/desc).
-        s = self.sort_order(s, params)
+        self.s = self.sort_order(params)
 
         # Select the fields to be returned.
         if params.fields:
-            s = self.select_fields(s, params)
+            self.s = self.select_fields(params)
 
         # Process all given filters.
         if params.filters:
-            s = self.process_filters(s, params.filters)
+            self.s = self.process_filters(params.filters)
 
         # Process all given aggregations.
         if params.aggs:
-            s = self.process_aggregations(s, params.aggs)
+            self.s = self.process_aggregations(params.aggs)
 
         # Execute the search query.
-        response = s.execute()
+        response = self.s.execute()
 
         if not response.success():
             raise HTTPException(
@@ -58,62 +58,21 @@ class ElasticSearchQueryBuilder(Search):
             "index_size": response.hits.total.value,
         }
 
-    @staticmethod
-    def sort_order(s: Search, params: SearchParamsV2) -> Search:
-        """Sort the documents based on the `sort_by` (field) and sort_order (asc/desc)."""
-        return s.sort({params.sort_by: {"order": params.sort_order}})
+    def sort_order(self, params: SearchParamsV2) -> Search:
+        """Sort ES documents based on the `sort_by` (field) and sort_order (asc/desc)."""
+        return self.s.sort({params.sort_by: {"order": params.sort_order}})
 
-    @staticmethod
-    def select_fields(s: Search, params: SearchParamsV2) -> Search:
+    def select_fields(self, params: SearchParamsV2) -> Search:
         """Select the fields to be returned."""
-        kwargs = {f"{params.fields_mode.value}s": params.fields}
-        return s.source(**kwargs)
+        return self.s.source(**{f"{params.fields_mode.value}s": params.fields})
 
-    @staticmethod
-    def process_aggregations(s: Search, aggs: Dict[str, Any]) -> Search:
-        logger.info("[Process::aggregations] %s", aggs)
-        # s.aggs.bucket('total_docs', A('value_count', field='_id'))
-        # s.aggs.bucket('total_docs', A('value_count', field='_id'))
-        #
-        # s.aggs.bucket('per_tag', A('terms', field='event_name'))
-        #
-        # (s.aggs.bucket('per_tag_2', A('terms', field='event_name'))
-        #  .metric('max_lines', 'max', field='lines'))
-        #
-        # s.aggs.bucket('features', 'nested', path='event_name') \
-        #     .metric('name', A('terms', field='event_name'))
-        #
-        # s.aggs.bucket("aggs", "composite", sources=[
-        #     {"event_name": A("terms", field="event_name")},
-        #     {"action": A("terms", field="action")}
-        # ], size=2)
-        #
-        # s.aggs.bucket("events_over_time", A(
-        #     "date_histogram", field="timestamp", interval="day", format="yyyy-MM-dd"
-        # ))
-        #
-        # s.aggs.bucket("top_actors", A("terms", field="actor.identifier", size=10))
-        #
-        # s.aggs.bucket("status_distribution", A("terms", field="status", size=10))
-        #
-        # s.aggs.bucket("context_breakdown", A("terms", field="event_name"))
-        #
-        # filter_agg = A(
-        #     "filter", Q(
-        #         "range", timestamp={"gte": "2024-01-01", "lte": "2024-02-01"}
-        #     )
-        # )
-        # terms_agg = A("terms", field="event_name")
-        # filter_agg.aggs["context_breakdown"] = terms_agg
-        # s.aggs["filtered_context"] = filter_agg
-
+    def process_aggregations(self, aggs: Dict[str, Any]) -> Search:
         for agg_name, values in aggs.items():
             field = values.get("field")
             agg_type = values.get("type")
-
             if agg_type in (AggregationTypeEnum.TERMS, AggregationTypeEnum.VALUE_COUNT):
                 # Simple bucket aggregation for type `terms` and `value_count`.
-                s.aggs.bucket(agg_name, A(agg_type, field=field))
+                self.s.aggs.bucket(agg_name, A(agg_type, field=field))
             if agg_type == AggregationTypeEnum.NESTED:
                 # Nested bucket aggregation.
                 for value in values.get("sub_aggregations"):
@@ -128,55 +87,49 @@ class ElasticSearchQueryBuilder(Search):
                         nested_agg.aggs = {}
                     nested_agg.aggs[terms_agg.name] = terms_agg
 
-                    s.aggs[nested_agg.name] = nested_agg
-        return s
+                    self.s.aggs[nested_agg.name] = nested_agg
+            return self.s
 
-    def process_filters(self, s: Search, filters: List[SearchFilterParams]) -> Search:
+    def process_filters(self, filters: List[SearchFilterParams]) -> Search:
         for f in filters:
             if f.type == FilterTypeEnum.RANGE:
-                s = self.process_filter_type_range(s, f)
+                self.s = self.process_filter_type_range(f)
             elif f.type == FilterTypeEnum.EXACT:
-                self.process_filter_type_exact(s, f)
+                self.s = self.process_filter_type_exact(f)
             elif f.type == FilterTypeEnum.NESTED and ("." in f.field.value):
-                self.process_filter_type_nested(s, f)
+                self.s = self.process_filter_type_nested(f)
             elif f.type == FilterTypeEnum.TEXT_SEARCH:
-                s = self.process_filter_type_text_search(s, f)
+                self.s = self.process_filter_type_text_search(f)
             elif f.type == FilterTypeEnum.WILDCARD:
-                s = self.process_filter_type_wildcard(s, f)
+                self.s = self.process_filter_type_wildcard(f)
             elif f.type == FilterTypeEnum.EXISTS:
-                s = self.process_filter_type_exists(s, f)
-        return s
+                self.s = self.process_filter_type_exists(f)
+        return self.s
 
-    @staticmethod
-    def process_filter_type_exact(s: Search, f: SearchFilterParams) -> Search:
+    def process_filter_type_exact(self, f: SearchFilterParams) -> Search:
         field = (
             "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
         )
-        return s.query("term", **{field: f.value})
+        return self.s.query("term", **{field: f.value})
 
-    @staticmethod
-    def process_filter_type_nested(s: Search, f: SearchFilterParams) -> Search:
+    def process_filter_type_nested(self, f: SearchFilterParams) -> Search:
         parent = f.field.value.split(".")[0]
         field = f.field.value.split(".")[1]
-        return s.query(
+        return self.s.query(
             "nested", path=parent, query=Q("match", **{f"{parent}__{field}": f.value})
         )
 
-    @staticmethod
-    def process_filter_type_range(s: Search, f: SearchFilterParams) -> Search:
+    def process_filter_type_range(self, f: SearchFilterParams) -> Search:
         field = (
             "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
         )
-        return s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
+        return self.s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
 
-    @staticmethod
-    def process_filter_type_text_search(s: Search, f: Any) -> Search:
-        return s.query("multi_match", query=f.values[0], fields=[f.field.value])
+    def process_filter_type_text_search(self, f: Any) -> Search:
+        return self.s.query("multi_match", query=f.values[0], fields=[f.field.value])
 
-    @staticmethod
-    def process_filter_type_wildcard(s: Search, f: SearchFilterParams) -> Search:
-        return s.query("wildcard", **{f.field.value: f.value})
+    def process_filter_type_wildcard(self, f: SearchFilterParams) -> Search:
+        return self.s.query("wildcard", **{f.field.value: f.value})
 
-    @staticmethod
-    def process_filter_type_exists(s: Search, f: SearchFilterParams) -> Search:
-        return s.query("exists", field=f.field.value)
+    def process_filter_type_exists(self, f: SearchFilterParams) -> Search:
+        return self.s.query("exists", field=f.field.value)
