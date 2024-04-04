@@ -175,35 +175,10 @@ def search_audit_log_entries(
 
 
 @app.get("/health", response_class=JSONResponse)
-async def health_check() -> Dict[str, Union[str, bool]]:
+async def health_check() -> Dict[str, str]:
     """
-    Health check endpoint used by Docker to check if the Elasticsearch instance/host is ready.
-
-    Returns:
-        A dictionary with a single key-value pair.
-
-    Raises:
-        HTTPException
+    Simple health check endpoint.
     """
-    try:
-        elastic_reachable = False
-        try:
-            elastic.check_health()
-            elastic_reachable = True
-        except ConnectionError:
-            pass
-
-        elastic_index_exists = False
-        try:
-            elastic.check_index_exists(env_vars.elastic_index_name)
-            elastic_index_exists = True
-        except ConnectionError:
-            pass
-
-        return {
-            "status": "OK",
-            "elastic_reachable": elastic_reachable,
-            "elastic_index_exists": elastic_index_exists,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "status": "OK",
+    }
