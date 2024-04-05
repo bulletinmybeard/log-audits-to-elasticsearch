@@ -126,7 +126,7 @@ class ElasticSearchQueryBuilder(Search):
         return self.s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
 
     def process_filter_type_text_search(self, f: Any) -> Search:
-        return self.s.query("multi_match", query=f.values[0], fields=[f.field.value])
+        return self.s.query("multi_match", query=f.value, fields=[f.field.value])
 
     def process_filter_type_wildcard(self, f: SearchFilterParams) -> Search:
         return self.s.query("wildcard", **{f.field.value: f.value})

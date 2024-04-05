@@ -18,6 +18,8 @@ class AuditLogEntry(CustomBaseModel):
         default=None,
         description="Details about the actor who initiated the event.",
     )
+    application_name: str = Field(description="Application name.")
+    module: str = Field(description="Module name.")
     action: str = Field(description="Action performed.")
     comment: Optional[str] = Field(
         default=None, description="Optional comment about the event."

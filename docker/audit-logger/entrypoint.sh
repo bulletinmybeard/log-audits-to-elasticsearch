@@ -42,6 +42,8 @@ create_elasticsearch_index_with_mappings() {
                             "user_agent": { "type": "keyword" }
                         }
                     },
+                    "application_name": { "type": "keyword" },
+                    "module": { "type": "keyword" },
                     "action": { "type": "keyword" },
                     "comment": { "type": "text" },
                     "context": { "type": "keyword" },
