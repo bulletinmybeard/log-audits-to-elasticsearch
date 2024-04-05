@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Q, Search
+from elasticsearch_dsl import A, Q, Search, Nested, Boolean
 from fastapi import HTTPException
 
 from audit_logger.custom_logger import get_logger
@@ -16,18 +16,17 @@ from audit_logger.models import (
 logger = get_logger("audit_logger")
 
 
-class ElasticSearchQueryBuilder(Search):
+class ElasticSearchQueryBuilder:
     elastic_index_name: str
     s: Search
 
     def __init__(self, using: Elasticsearch, index: str, **kwargs: Any) -> None:
-        super().__init__(using=using, index=index, **kwargs)
         self.elastic_index_name = index
         self.s = Search(using=using, index=index)
 
     def process_parameters(self, params: SearchParams) -> Dict[str, Any]:
         # Set the number of documents to be returned.
-        self.s = self.extra(from_=0, size=params.max_results, track_total_hits=True)
+        self.s = self.s.extra(from_=0, size=params.max_results, track_total_hits=True)
 
         # Sort the documents based on the `sort_by` (field) and sort_order (asc/desc).
         self.s = self.sort_order(params)
@@ -94,10 +93,6 @@ class ElasticSearchQueryBuilder(Search):
                     self.s.aggs[nested_agg.name] = nested_agg
             return self.s
 
-    def process_experimental_filters(self, filters: List[Any]) -> Search:
-        print('[process_experimental_filters] filters:', filters)
-        return self.s
-
     def process_filters(self, filters: List[SearchFilterParams]) -> Search:
         for f in filters:
             if f.type == FilterTypeEnum.RANGE:
@@ -121,10 +116,11 @@ class ElasticSearchQueryBuilder(Search):
         return self.s.query("term", **{field: f.value})
 
     def process_filter_type_nested(self, f: SearchFilterParams) -> Search:
-        parent = f.field.value.split(".")[0]
-        field = f.field.value.split(".")[1]
+        parent, field = f.field.value.split(".")
         return self.s.query(
-            "nested", path=parent, query=Q("match", **{f"{parent}__{field}": f.value})
+            "nested",
+            path=parent,
+            query=Q("match", **{f"{parent}__{field}": f.value})
         )
 
     def process_filter_type_range(self, f: SearchFilterParams) -> Search:
@@ -134,10 +130,24 @@ class ElasticSearchQueryBuilder(Search):
         return self.s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
 
     def process_filter_type_text_search(self, f: Any) -> Search:
-        return self.s.query("multi_match", query=f.value, fields=[f.field.value])
+        fields = f.fields or [f.field.value]
+        return self.s.query("multi_match", query=f.value, fields=fields)
 
     def process_filter_type_wildcard(self, f: SearchFilterParams) -> Search:
-        return self.s.query("wildcard", **{f.field.value: f.value})
+        if "." in f.field.value:
+            parent, field = f.field.value.split(".")
+            self.s = self.s.query(
+                "nested",
+                path=parent,
+                query=Q("wildcard", **{f"{parent}__{field}": f"{f.value}"})
+            )
+        else:
+            self.s = self.s.query("wildcard", **{f.field.value: f.value})
+        return self.s
 
     def process_filter_type_exists(self, f: SearchFilterParams) -> Search:
         return self.s.query("exists", field=f.field.value)
+
+    def process_experimental_filters(self, filters: List[Any]) -> Search:
+        print('[process_experimental_filters] filters:', filters)
+        return self.s

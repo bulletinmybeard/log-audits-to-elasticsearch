@@ -228,7 +228,7 @@ def generate_log_entry() -> AuditLogEntry:
     return AuditLogEntry(
         timestamp=fake.date_time_this_year().isoformat(),
         event_name=fake.random_element(
-            ["user_login", "data_backup", "file_access", "role_update"]
+            ["user_login", "user_logout", "data_backup", "file_access", "role_update"]
         ),
         actor=ActorDetails(
             identifier=fake.random_element(["j.doe", "j.dot", "a.smith", "s.jones"]),

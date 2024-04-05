@@ -38,6 +38,7 @@ class FilterTypeEnum(str, Enum):
     EXISTS = "exists"
     MISSING = "missing"
     NESTED = "nested"
+    NESTED_MATCH = "nested_match"
 
 
 class FieldIdentifierEnum(str, Enum):
@@ -48,6 +49,8 @@ class FieldIdentifierEnum(str, Enum):
     ACTOR_TYPE = "actor.type"
     ACTOR_IP_ADDRESS = "actor.ip_address"
     ACTOR_USER_AGENT = "actor.user_agent"
+    APPLICATION_NAME = "application_name"
+    MODULE = "module"
     ACTION = "action"
     COMMENT = "comment"
     CONTEXT = "context"
@@ -73,6 +76,10 @@ class AggregationTypeEnum(str, Enum):
 
 class SearchFilterParams(CustomBaseModel):
     field: FieldIdentifierEnum = Field(
+        default=None,
+        description="",
+    )
+    fields: Optional[List[FieldIdentifierEnum]] = Field(
         default=None,
         description="",
     )
