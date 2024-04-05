@@ -16,7 +16,7 @@ from .search_params import (
     FieldSelectionMode,
     FilterTypeEnum,
     SearchFilterParams,
-    SearchParamsV2,
+    SearchParams,
     SortOrderEnum,
 )
 from .server_details import ServerDetails

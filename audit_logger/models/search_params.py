@@ -162,7 +162,7 @@ class AggregationSetup(MaxResultsMixin, CustomBaseModel):
     )
 
 
-class SearchParamsV2(MaxResultsMixin, CustomBaseModel):
+class SearchParams(MaxResultsMixin, CustomBaseModel):
     fields: Optional[List[FieldIdentifierEnum]] = Field(
         default=None,
         description="Fields to include in results. Empty includes all fields.",
@@ -185,6 +185,10 @@ class SearchParamsV2(MaxResultsMixin, CustomBaseModel):
     aggs: Optional[Union[List[AggregationSetup], Dict[str, Any]]] = Field(
         default=None,
         description="Aggregations to apply for data summarization/analysis.",
+    )
+    filters_exp: Optional[List[Any]] = Field(
+        default=None,
+        description="Experimental filters to apply for refined search results.",
     )
 
     @field_validator("sort_order")

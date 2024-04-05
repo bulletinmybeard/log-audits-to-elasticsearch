@@ -17,7 +17,7 @@ from audit_logger.models import (
     AuditLogEntry,
     BulkAuditLogOptions,
     GenericResponse,
-    SearchParamsV2,
+    SearchParams,
     SearchResults,
 )
 from audit_logger.utils import (
@@ -144,7 +144,7 @@ async def create_random_audit_log_entries(
 
 @app.post("/search", dependencies=[Depends(verify_api_key)])
 def search_audit_log_entries(
-    params: Optional[SearchParamsV2] = Body(default=None),
+    params: Optional[SearchParams] = Body(default=None),
 ) -> SearchResults:
     """
     Performs a search query against audit log entries stored in Elasticsearch based on
@@ -165,7 +165,7 @@ def search_audit_log_entries(
         elastic_filters = ElasticSearchQueryBuilder(
             using=elastic, index=env_vars.elastic_index_name
         )
-        result = elastic_filters.process_parameters(params or SearchParamsV2())
+        result = elastic_filters.process_parameters(params or SearchParams())
         return SearchResults(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )

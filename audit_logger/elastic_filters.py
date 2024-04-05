@@ -10,7 +10,7 @@ from audit_logger.models import (
     FieldIdentifierEnum,
     FilterTypeEnum,
     SearchFilterParams,
-    SearchParamsV2,
+    SearchParams,
 )
 
 logger = get_logger("audit_logger")
@@ -25,7 +25,7 @@ class ElasticSearchQueryBuilder(Search):
         self.elastic_index_name = index
         self.s = Search(using=using, index=index)
 
-    def process_parameters(self, params: SearchParamsV2) -> Dict[str, Any]:
+    def process_parameters(self, params: SearchParams) -> Dict[str, Any]:
         # Set the number of documents to be returned.
         self.s = self.extra(from_=0, size=params.max_results, track_total_hits=True)
 
@@ -39,6 +39,10 @@ class ElasticSearchQueryBuilder(Search):
         # Process all given filters.
         if params.filters:
             self.s = self.process_filters(params.filters)
+
+        # Process all given experimental filters.
+        if params.filters_exp:
+            self.s = self.process_experimental_filters(params.filters_exp)
 
         # Process all given aggregations.
         if params.aggs:
@@ -58,11 +62,11 @@ class ElasticSearchQueryBuilder(Search):
             "index_size": response.hits.total.value,
         }
 
-    def sort_order(self, params: SearchParamsV2) -> Search:
+    def sort_order(self, params: SearchParams) -> Search:
         """Sort ES documents based on the `sort_by` (field) and sort_order (asc/desc)."""
         return self.s.sort({params.sort_by: {"order": params.sort_order}})
 
-    def select_fields(self, params: SearchParamsV2) -> Search:
+    def select_fields(self, params: SearchParams) -> Search:
         """Select the fields to be returned."""
         return self.s.source(**{f"{params.fields_mode.value}s": params.fields})
 
@@ -89,6 +93,10 @@ class ElasticSearchQueryBuilder(Search):
 
                     self.s.aggs[nested_agg.name] = nested_agg
             return self.s
+
+    def process_experimental_filters(self, filters: List[Any]) -> Search:
+        print('[process_experimental_filters] filters:', filters)
+        return self.s
 
     def process_filters(self, filters: List[SearchFilterParams]) -> Search:
         for f in filters:
