@@ -19,7 +19,7 @@ services:
 
   elasticsearch:
     container_name: elasticsearch
-    image: arm64v8/elasticsearch:7.17.10
+    image: arm64v8/elasticsearch:7.17.19
     env_file:
       - .env
     environment:
@@ -44,7 +44,7 @@ services:
       context: ./docker/kibana
       dockerfile: Dockerfile
       args:
-        KIBANA_VERSION: "7.17.10"
+        KIBANA_VERSION: 7.17.19
     env_file:
       - .env
     environment:
@@ -68,7 +68,7 @@ services:
       - sa_kibana_data:/usr/share/kibana/data
       - ./backup:/backup
     command: sh ./backup/volume_backups.sh
-    restart: "no"
+    restart: no
     profiles:
       - backup
 
