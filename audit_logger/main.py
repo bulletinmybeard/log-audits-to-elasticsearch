@@ -57,7 +57,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    debug=app_config.authentication.api_key == 'development',
+    debug=app_config.authentication.api_key == "development",
     version="1.0.0",
     redirect_slashes=True,
     lifespan=lifespan,
@@ -72,10 +72,10 @@ add_middleware(app, app_config)
 
 
 def dev_only():
-    if app_config.environment != 'development':
+    if app_config.environment != "development":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This route is only available in development environment"
+            detail="This route is only available in development environment",
         )
 
 
