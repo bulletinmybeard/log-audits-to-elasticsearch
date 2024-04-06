@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import Field, HttpUrl, field_validator
 
@@ -14,7 +14,7 @@ class EnvVars(CustomBaseModel):
     config_file_path: str = Field(...)
 
     @field_validator("elastic_hosts")
-    def split_hosts(cls, v):
+    def split_hosts(cls, v: str) -> List[HttpUrl]:
         if not isinstance(v, str):
             raise ValueError("ELASTIC_HOSTS must be a comma-separated string")
         return [HttpUrl.build(scheme="http", host=h.strip()) for h in v.split(",") if h]
