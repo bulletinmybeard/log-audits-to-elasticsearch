@@ -1,3 +1,4 @@
+environment: development
 authentication:
   api_key: "change-me-plz"
 middlewares:

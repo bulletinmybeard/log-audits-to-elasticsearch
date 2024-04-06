@@ -39,3 +39,7 @@ class AppConfig(CustomBaseModel):
     authentication: Authentication = Field(
         description="API authentication settings",
     )
+    environment: Optional[str] = Field(
+        default="production",
+        description="The environment the application is running in. Defaults to 'production'.",
+    )

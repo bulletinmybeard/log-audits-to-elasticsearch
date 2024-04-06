@@ -57,7 +57,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    debug=True,
+    debug=app_config.authentication.api_key == 'development',
     version="1.0.0",
     redirect_slashes=True,
     lifespan=lifespan,
@@ -69,6 +69,14 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(ValueError, value_error_handler)
 
 add_middleware(app, app_config)
+
+
+def dev_only():
+    if app_config.environment != 'development':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This route is only available in development environment"
+        )
 
 
 async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
@@ -139,7 +147,7 @@ async def create_bulk_audit_log_entries(
 
 @app.post(
     "/create/create-bulk-auto",
-    dependencies=[Depends(verify_api_key)],
+    dependencies=[Depends(dev_only), Depends(verify_api_key)],
     response_class=JSONResponse,
 )
 async def create_random_audit_log_entries(
