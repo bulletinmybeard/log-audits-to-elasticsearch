@@ -6,9 +6,19 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 from zoneinfo import ZoneInfo
 
-from elasticsearch import Elasticsearch, SerializationError, helpers
+from elasticsearch import (
+    BadRequestError,
+    ConflictError,
+    ConnectionError,
+    Elasticsearch,
+    NotFoundError,
+    SerializationError,
+    TransportError,
+    helpers,
+)
 from faker import Faker
 from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from audit_logger.custom_logger import get_logger
@@ -16,7 +26,6 @@ from audit_logger.models import (
     ActorDetails,
     AuditLogEntry,
     BulkAuditLogOptions,
-    GenericResponse,
     ResourceDetails,
 )
 from audit_logger.models.env_vars import EnvVars
@@ -143,12 +152,12 @@ def generate_audit_log_entries_with_fake_data(
     return [generate_log_entry().dict() for _ in range(settings.bulk_count)]
 
 
-# ) -> GenericResponse:
+# GenericResponse
 async def process_audit_logs(
     elastic: Elasticsearch,
     elastic_index_name: str,
     log_entries: Union[AuditLogEntry, List[Union[Dict, AuditLogEntry]]],
-) -> Any:
+) -> JSONResponse:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
 
@@ -163,37 +172,76 @@ async def process_audit_logs(
     Raises:
     - HTTPException
     """
-
-    is_bulk_operation = isinstance(log_entries, list)
-    if not is_bulk_operation:
-        log_entries = [log_entries.dict()]
-
     try:
+        is_bulk_operation = isinstance(log_entries, list)
+        if not is_bulk_operation:
+            log_entries = [log_entries.dict()]
+
         operations = create_bulk_operations(elastic_index_name, log_entries)
         success_count, failed = helpers.bulk(elastic, operations)
         failed_items = failed if isinstance(failed, list) else []
 
         if len(failed_items) > 0:
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to process audit logs: {str(failed_items)}",
             )
 
         if is_bulk_operation:
-            return GenericResponse(
-                status="success",
-                success_count=success_count,
+            return JSONResponse(
+                content={
+                    "status": "success",
+                    "success_count": success_count,
+                    "failed_items": failed_items,
+                },
+                status_code=status.HTTP_207_MULTI_STATUS,
             )
 
-        return status.HTTP_201_CREATED
-    except SerializationError as e:
-        logger.error(
-            "SerializationError: %s\nFull stack trace:\n%s", e, traceback.format_exc()
+        return JSONResponse(
+            content={
+                "status": "success",
+            },
+            status_code=status.HTTP_201_CREATED,
         )
-        raise HTTPException(status_code=500, detail="Failed to process audit logs")
-    except Exception as e:
+
+    except SerializationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to serialize data for Elasticsearch: {}".format(e),
+        ) from e
+
+    except ConnectionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not connect to Elasticsearch: {}".format(e),
+        ) from e
+
+    except TransportError as e:  # Superclass for more specific transport errors
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            ) from e
+        elif e.status_code == 409:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            ) from e
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Elasticsearch transport error: {}".format(e),
+            ) from e
+
+    except (NotFoundError, ConflictError, BadRequestError) as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from e
+
+    except Exception as e:  # Catch-all for unexpected errors
         logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Failed to process audit logs")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occurred.",
+        ) from e
 
 
 def validate_date(date_str: str) -> bool:

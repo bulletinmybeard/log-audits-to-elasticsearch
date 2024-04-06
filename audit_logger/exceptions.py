@@ -26,9 +26,7 @@ async def value_error_handler(_: Any, exc: Exception) -> JSONResponse:
         raise exc
 
 
-async def validation_exception_handler(
-    _: Any, exc: Exception
-) -> JSONResponse:
+async def validation_exception_handler(_: Any, exc: Exception) -> JSONResponse:
     """
     Handles validation errors.
 

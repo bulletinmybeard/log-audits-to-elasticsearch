@@ -20,7 +20,6 @@ from audit_logger.middlewares import add_middleware
 from audit_logger.models import (
     AuditLogEntry,
     BulkAuditLogOptions,
-    GenericResponse,
     SearchParams,
     SearchResults,
 )
@@ -80,8 +79,9 @@ async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
     return api_key
 
 
-@app.post("/create", dependencies=[Depends(verify_api_key)])
-# ) -> GenericResponse:
+@app.post(
+    "/create", dependencies=[Depends(verify_api_key)], response_class=JSONResponse
+)
 async def create_audit_log_entry(audit_log: AuditLogEntry = Body(...)) -> Any:
     """
     Receives an audit log entry, validates it, and processes
@@ -101,10 +101,12 @@ async def create_audit_log_entry(audit_log: AuditLogEntry = Body(...)) -> Any:
     )
 
 
-@app.post("/create-bulk", dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/create-bulk", dependencies=[Depends(verify_api_key)], response_class=JSONResponse
+)
 async def create_bulk_audit_log_entries(
     audit_logs: List[AuditLogEntry] = Body(...),
-) -> GenericResponse:
+) -> Any:
     """
     Receives one or multiple audit log entries, validates them, and processes
     them to be stored in Elasticsearch.
@@ -114,39 +116,55 @@ async def create_bulk_audit_log_entries(
 
     Returns:
         CreateResponse
-
-    Raises:
-        Union[HTTPException, BulkLimitExceededError]
     """
     bulk_limit = 350
     if len(audit_logs) > bulk_limit:
         raise BulkLimitExceededError(limit=bulk_limit)
 
-    return await process_audit_logs(
-        elastic,
-        cast(str, env_vars.elastic_index_name),
-        [dict(model.dict()) for model in audit_logs],
-    )
+    try:
+        return await process_audit_logs(
+            elastic,
+            cast(str, env_vars.elastic_index_name),
+            [dict(model.dict()) for model in audit_logs],
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process audit log entries.",
+        ) from e
 
 
-@app.post("/create/create-bulk-auto", dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/create/create-bulk-auto",
+    dependencies=[Depends(verify_api_key)],
+    response_class=JSONResponse,
+)
 async def create_random_audit_log_entries(
     options: BulkAuditLogOptions,
-) -> GenericResponse:
+) -> Any:
     """
     Generates and stores a single random audit log entry.
 
     Returns:
         CreateResponse
-
-    Raises:
-        HTTPException
     """
-    return await process_audit_logs(
-        elastic,
-        cast(str, env_vars.elastic_index_name),
-        generate_audit_log_entries_with_fake_data(options),
-    )
+    try:
+        return await process_audit_logs(
+            elastic,
+            cast(str, env_vars.elastic_index_name),
+            generate_audit_log_entries_with_fake_data(options),
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process audit log entries.",
+        ) from e
 
 
 @app.post("/search", dependencies=[Depends(verify_api_key)])

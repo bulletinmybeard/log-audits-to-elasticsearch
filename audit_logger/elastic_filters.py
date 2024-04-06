@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from audit_logger.custom_logger import get_logger
 from audit_logger.models import (
@@ -54,7 +54,7 @@ class ElasticSearchQueryBuilder:
 
         if not response.success():
             raise HTTPException(
-                status_code=400, detail="[QueryFilterElasticsearch] Search failed."
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Search failed."
             )
 
         return {
