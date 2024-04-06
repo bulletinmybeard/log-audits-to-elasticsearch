@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List
-from zoneinfo import ZoneInfo
 
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Boolean, Nested, Q, Search
+from elasticsearch_dsl import A, Q, Search
 from fastapi import HTTPException
 
 from audit_logger.custom_logger import get_logger
@@ -23,7 +22,7 @@ class ElasticSearchQueryBuilder:
     elastic_index_name: str
     s: Search
 
-    def __init__(self, using: Elasticsearch, index: str, **kwargs: Any) -> None:
+    def __init__(self, using: Elasticsearch, index: str) -> None:
         self.elastic_index_name = index
         self.s = Search(using=using, index=index)
 

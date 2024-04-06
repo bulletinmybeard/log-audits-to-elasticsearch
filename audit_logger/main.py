@@ -1,6 +1,6 @@
 import traceback
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 from fastapi import Body, Depends, FastAPI, HTTPException, status
 from fastapi.exceptions import RequestValidationError
