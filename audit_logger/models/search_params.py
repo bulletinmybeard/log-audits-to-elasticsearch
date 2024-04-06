@@ -109,10 +109,11 @@ class SearchFilterParams(CustomBaseModel):
         if v.type == FilterTypeEnum.RANGE:
             # Check if the field is a date and validate the 'gte' and 'lte' values.
             if v.field == FieldIdentifierEnum.TIMESTAMP:
-                if not all((validate_date(v.gte), validate_date(v.lte))):
-                    raise ValueError(
-                        f"For a date 'range' filter, 'gte' and 'lte' must be valid dates (YYYY-MM-DDTHH:MM:SSZ)."  # noqa
-                    )
+                if v.gte and v.lte:
+                    if not all((validate_date(v.gte), validate_date(v.lte))):
+                        raise ValueError(
+                            f"For a date 'range' filter, 'gte' and 'lte' must be valid dates (YYYY-MM-DDTHH:MM:SSZ)."  # noqa
+                        )
             # Check if the field is an IP address and validate the 'gte' and 'lte' values.
             if v.field in [
                 FieldIdentifierEnum.ACTOR_IP_ADDRESS,

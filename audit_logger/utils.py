@@ -4,6 +4,7 @@ import re
 import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Union
+from zoneinfo import ZoneInfo
 
 from elasticsearch import Elasticsearch, SerializationError, helpers
 from faker import Faker
@@ -237,8 +238,24 @@ def generate_log_entry() -> AuditLogEntry:
             user_agent=fake.user_agent(),
         ),
         action=fake.random_element(["create", "update", "delete", "login"]),
-        application_name=fake.random_element(["user-management-service", "login-frontend", "payment-gateway", "logging-service", "data-backup-service"]),
-        module=fake.random_element(["authentication", "authorization", "database-client", "ui-notifications", "cronjob"]),
+        application_name=fake.random_element(
+            [
+                "user-management-service",
+                "login-frontend",
+                "payment-gateway",
+                "logging-service",
+                "data-backup-service",
+            ]
+        ),
+        module=fake.random_element(
+            [
+                "authentication",
+                "authorization",
+                "database-client",
+                "ui-notifications",
+                "cronjob",
+            ]
+        ),
         comment=fake.sentence(),
         context=fake.random_element(
             ["user_management", "system_backup", "content_delivery", "security"]
@@ -283,3 +300,7 @@ def load_env_vars() -> EnvVars:
     except ValidationError as e:
         logger.error("Env vars validation error: %s", e)
         raise
+
+
+def current_time(timezone="Europe/Amsterdam"):
+    return datetime.now(ZoneInfo(timezone))

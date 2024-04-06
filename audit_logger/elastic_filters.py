@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
 from typing import Any, Dict, List
+from zoneinfo import ZoneInfo
 
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import A, Q, Search, Nested, Boolean
+from elasticsearch_dsl import A, Boolean, Nested, Q, Search
 from fastapi import HTTPException
 
 from audit_logger.custom_logger import get_logger
@@ -12,6 +14,7 @@ from audit_logger.models import (
     SearchFilterParams,
     SearchParams,
 )
+from audit_logger.utils import current_time
 
 logger = get_logger("audit_logger")
 
@@ -118,16 +121,20 @@ class ElasticSearchQueryBuilder:
     def process_filter_type_nested(self, f: SearchFilterParams) -> Search:
         parent, field = f.field.value.split(".")
         return self.s.query(
-            "nested",
-            path=parent,
-            query=Q("match", **{f"{parent}__{field}": f.value})
+            "nested", path=parent, query=Q("match", **{f"{parent}__{field}": f.value})
         )
 
     def process_filter_type_range(self, f: SearchFilterParams) -> Search:
         field = (
             "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
         )
-        return self.s.query("range", **{field: {"gte": f.gte, "lte": f.lte}})
+        if f.value:
+            gte, lte = self.calculate_date_range(f.value)
+            query_range = {"gte": gte, "lte": lte}
+        else:
+            query_range = {"gte": f.gte, "lte": f.lte}
+
+        return self.s.query("range", **{field: query_range})
 
     def process_filter_type_text_search(self, f: Any) -> Search:
         fields = f.fields or [f.field.value]
@@ -139,7 +146,7 @@ class ElasticSearchQueryBuilder:
             self.s = self.s.query(
                 "nested",
                 path=parent,
-                query=Q("wildcard", **{f"{parent}__{field}": f"{f.value}"})
+                query=Q("wildcard", **{f"{parent}__{field}": f"{f.value}"}),
             )
         else:
             self.s = self.s.query("wildcard", **{f.field.value: f.value})
@@ -149,5 +156,32 @@ class ElasticSearchQueryBuilder:
         return self.s.query("exists", field=f.field.value)
 
     def process_experimental_filters(self, filters: List[Any]) -> Search:
-        print('[process_experimental_filters] filters:', filters)
+        print("[process_experimental_filters] filters:", filters)
         return self.s
+
+    @staticmethod
+    def calculate_date_range(value: str):
+        """Calculate 'gte' and 'lte' values based on 'value' (e.g., 'today', 'this-week')."""
+        now = current_time()
+        if value == "today":
+            gte = now.strftime("%Y-%m-%dT00:00:00")
+            lte = now.strftime("%Y-%m-%dT23:59:59")
+        elif value == "yesterday":
+            yesterday = now - timedelta(days=1)
+            gte = yesterday.strftime("%Y-%m-%dT00:00:00")
+            lte = yesterday.strftime("%Y-%m-%dT23:59:59")
+        elif value == "this-week":
+            week_start = now - timedelta(days=now.weekday())
+            week_end = week_start + timedelta(days=6)
+            gte = week_start.strftime("%Y-%m-%dT00:00:00")
+            lte = week_end.strftime("%Y-%m-%dT23:59:59")
+        elif value == "last-month":
+            first_day_last_month = now.replace(day=1) - timedelta(days=1)
+            first_day_this_month = now.replace(day=1)
+            last_day_last_month = first_day_this_month - timedelta(days=1)
+            gte = first_day_last_month.replace(day=1).strftime("%Y-%m-%dT00:00:00")
+            lte = last_day_last_month.strftime("%Y-%m-%dT23:59:59")
+        else:
+            raise ValueError("Unsupported value for date range")
+
+        return gte, lte

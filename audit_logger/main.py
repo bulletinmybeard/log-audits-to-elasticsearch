@@ -2,7 +2,7 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union, cast
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
@@ -11,7 +11,11 @@ from audit_logger.config_manager import ConfigManager
 from audit_logger.custom_logger import get_logger
 from audit_logger.elastic import CustomElasticsearch
 from audit_logger.elastic_filters import ElasticSearchQueryBuilder
-from audit_logger.exceptions import BulkLimitExceededError, validation_exception_handler
+from audit_logger.exceptions import (
+    BulkLimitExceededError,
+    validation_exception_handler,
+    value_error_handler,
+)
 from audit_logger.middlewares import add_middleware
 from audit_logger.models import (
     AuditLogEntry,
@@ -63,13 +67,16 @@ app = FastAPI(
 api_key_header = APIKeyHeader(name="X-API-Key")
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(ValueError, value_error_handler)
 
 add_middleware(app, app_config)
 
 
 async def verify_api_key(api_key: str = Depends(api_key_header)) -> str:
     if api_key != app_config.authentication.api_key:
-        raise HTTPException(status_code=401, detail="Invalid API-Key")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API-Key"
+        )
     return api_key
 
 
@@ -169,9 +176,17 @@ def search_audit_log_entries(
         return SearchResults(
             hits=len(result["docs"]), docs=result["docs"], aggs=result["aggs"]
         )
+    except ValueError as ve:
+        detail_message = f"Invalid parameter value: {ve}"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=detail_message
+        ) from ve
     except Exception as e:
         logger.error("Error: %s\nFull stack trace:\n%s", e, traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Failed to query audit logs")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to query audit logs",
+        )
 
 
 @app.get("/health", response_class=JSONResponse)

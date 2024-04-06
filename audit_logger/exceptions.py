@@ -1,8 +1,26 @@
 from typing import Any
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+
+async def value_error_handler(_: Any, exc: ValueError) -> JSONResponse:
+    """
+    Handles ValueError exceptions raised during request processing.
+
+    Args:
+        _ : The request object which is not used in this handler but it's part of the
+            signature required by FastAPI.
+        exc: The `ValueError` instance raised.
+
+    Returns:
+        A `JSONResponse` object with a 400 status code and a json body detailing the error.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)},
+    )
 
 
 async def validation_exception_handler(
@@ -31,14 +49,18 @@ async def validation_exception_handler(
         for error in errors
     ]
     return JSONResponse(
-        status_code=422,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": simplified_errors},
     )
 
 
 class BulkLimitExceededError(HTTPException):
+    """
+    Raised when a bulk operation exceeds the maximum number of items allowed in a bulk operation.
+    """
+
     def __init__(self, limit: int) -> None:
         super().__init__(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"The maximum number of items allowed in a bulk operation is {limit}.",
         )
