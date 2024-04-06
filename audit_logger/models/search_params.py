@@ -105,7 +105,7 @@ class SearchFilterParams(CustomBaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_filter_fields(cls, v):
+    def validate_filter_fields(cls, v: Any) -> Any:
         if v.type == FilterTypeEnum.RANGE:
             # Check if the field is a date and validate the 'gte' and 'lte' values.
             if v.field == FieldIdentifierEnum.TIMESTAMP:
@@ -132,13 +132,13 @@ class SearchFilterParams(CustomBaseModel):
         return v
 
     @field_validator("field")
-    def check_field_is_valid(cls, v):
+    def check_field_is_valid(cls, v: str) -> str:
         if v not in FieldIdentifierEnum:
             raise ValueError(f"field must be one of {list(FieldIdentifierEnum)}")
         return v
 
     @field_validator("type")
-    def check_type_is_valid(cls, v):
+    def check_type_is_valid(cls, v: str) -> str:
         if v not in FilterTypeEnum:
             raise ValueError(f"type must be one of {list(FilterTypeEnum)}")
         return v
