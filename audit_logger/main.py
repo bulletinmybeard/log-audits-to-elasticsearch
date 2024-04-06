@@ -58,7 +58,7 @@ async def lifespan(_: Any) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     debug=True,
-    version="0.5.0",
+    version="1.0.0",
     redirect_slashes=True,
     lifespan=lifespan,
 )

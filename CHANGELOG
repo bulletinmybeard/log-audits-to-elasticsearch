@@ -4,11 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2024-03-23
-### Changed
+## [1.0.0] (2024-04-06)
+- Initial release. See [README.md](README.md) for more details.
+
+## [0.5.0] (2024-03-23)
 - Everything has been refactored, revamped, completed, etc..
 
-## [0.1.0] - 2024-03-17
+## [0.1.0] (2024-03-17)
 ### Added
 - Docker setup with Elasticsearch, Kibana, and FastAPI.
 - Python FastAPI endpoints for creating audit log entries `/create` (single + bulk), querying audit log entries `/search`, and for generating audit log entries with fake data  `/create-random`.
