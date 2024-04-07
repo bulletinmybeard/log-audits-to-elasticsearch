@@ -31,7 +31,6 @@ services:
       memlock:
         soft: -1
         hard: -1
-    user: root
     restart: unless-stopped
     volumes:
       - sa_elasticsearch_data:/usr/share/elasticsearch/data
