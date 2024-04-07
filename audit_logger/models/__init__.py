@@ -1,5 +1,5 @@
 from .actor_details import ActorDetails
-from .audit_log_entry import AuditLogEntry
+from .audit_log_entry import AuditLogEntry, current_time
 from .config import APIMiddlewares, AppConfig, CORSSettings
 from .request import BulkAuditLogOptions
 from .resource import ResourceDetails

@@ -12,8 +12,8 @@ from audit_logger.models import (
     FilterTypeEnum,
     SearchFilterParams,
     SearchParams,
+    current_time,
 )
-from audit_logger.utils import current_time
 
 logger = get_logger("audit_logger")
 

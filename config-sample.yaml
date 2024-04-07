@@ -1,3 +1,4 @@
+timezone: "Europe/Amsterdam"
 environment: development
 authentication:
   api_key: "change-me-plz"

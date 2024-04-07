@@ -24,6 +24,9 @@ services:
       - .env
     environment:
       - discovery.type=single-node
+      - ingest.geoip.downloader.enabled=false
+      - path.repo=/usr/share/elasticsearch/repository
+      - repositories.fs.location=/usr/share/elasticsearch/repository
     ulimits:
       memlock:
         soft: -1

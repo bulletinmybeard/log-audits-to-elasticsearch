@@ -12,12 +12,11 @@ class ActorType(str, Enum):
 
 
 class ActorDetails(CustomBaseModel):
-    identifier: Optional[str] = Field(
-        default=None,
+    identifier: str = Field(
         description="Unique identifier of the actor. "
         "Can be an email address, username, etc.",
     )
-    type: Optional[ActorType] = Field(
+    type: ActorType = Field(
         default=None,
         description="Type of actor, e.g., 'user' or 'system'.",
     )
