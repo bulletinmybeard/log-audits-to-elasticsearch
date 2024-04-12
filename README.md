@@ -1,269 +1,240 @@
+![MIT license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+
 # log-audits-to-elasticsearch
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Application Version](https://img.shields.io/badge/App-v1.0.0-green)
-![Elasticsearch Version](https://img.shields.io/badge/Elasticsearch-v7.17.10-green)
-[![Pre-Commit Status](https://github.com/bulletinmybeard/log-audits-to-elasticsearch/actions/workflows/ci.yml/badge.svg)](https://github.com/bulletinmybeard/log-audits-to-elasticsearch/actions/workflows/ci.yml)
-
-
-Log Audits To Elasticsearch Using Python FastAPI.
+Designed for developers and system administrators, this Docker solution provides a centralized and searchable audit logging system
+leveraging Elasticsearch's powerful scalability and search capabilities.
 
 ## Table of Contents
-* [Introduction](#introduction)
-* [Prerequisites](#prerequisites)
-  * [Docker](#docker)
-  * [Poetry](#poetry)
-  * [Python](#python)
-* [Usage](#usage)
-* [API Endpoints](#api-endpoints)
-* [License](#license)
+- [Introduction](#introduction)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+      - [Clone the Repository](#clone-the-repository)
+      - [Build and Run the Container](#build-and-run-the-container)
+- [Usage](#usage)
+  - [Configuration](#configuration)
+    - [Environment File (.env) for Docker](#environment-file-env-for-docker)
+    - [Configuration File (config.yaml) for FastAPI](#configuration-file-configyaml-for-fastapi)
+  - [FastAPI endpoints](#fastapi-endpoints)
+  - [Audit Logs](#audit-logs)
+    - [Audit Log Schema (Elasticsearch)](#audit-log-schema-elasticsearch)
+    - [Audit Log ES Document Example](#audit-log-es-document-example)
+    - [Create a Single Audit Log](#create-a-single-audit-log)
+    - [Create Bulk Audit Logs](#create-bulk-audit-logs)
+    - [Create Automated Bulk Audit Logs](#create-automated-bulk-audit-logs)
+  - [Search Audit Logs](#search-audit-logs)
+    - [Search Features](#search-features)
+    - [Crafting Search Requests](#crafting-search-requests)
+- [Running Backups](#running-backups)
+  - [Executing Backups](#executing-backups)
+  - [Automating Backups](#automating-backups)
+- [Elasticsearch and Kibana](#elasticsearch-and-kibana)
+  - [Accessing Elasticsearch](#accessing-elasticsearch)
+  - [Accessing Kibana](#accessing-kibana)
+- [License](#license)
 
+## Introduction
+The `log-audits-to-elasticsearch` project offers a robust, Docker-based solution for centralized audit logging.
+Leveraging Elasticsearch's powerful search capabilities, it's designed to assist developers and system administrators in efficiently storing, searching, and managing audit logs.
+This ensures high scalability for growing application needs, offering an invaluable tool for monitoring and security compliance.
 
-> **WORK IN PROGRESS!!!!!**
+## Getting Started
+
+### Prerequisites
+Before you begin, ensure you have installed the following tools:
+- [Docker](https://docs.docker.com/get-docker/) (version 25.0.3 or newer)
+- [Docker Compose](https://docs.docker.com/compose/install/) Compose (version 2.26.1 or newer)
+
+### Installation
+#### Clone the Repository
+Start by cloning the project repository to your local machine:
+```bash
+git clone git@github.com:bulletinmybeard/log-audits-to-elasticsearch.git
+````
+
+#### Build and Run the Container
+Navigate to the project directory and start the Docker containers. This step builds the Docker images if they're not already built or rebuilds them if any changes were made.
 
 ```bash
-# Create a new Docker network for the services
-docker network create --driver bridge --subnet=172.70.0.0/16 --gateway=172.70.0.1 service_audit
+cd log-audits-to-elasticsearch
+docker-compose up --build
 ```
 
-## Pre-Commit Hook
-```bash
-# Install the hook to run the linter before each commit
-pre-commit install
+[↑ Back to top](#table-of-contents)
 
-# Run the hook manually
-pre-commit run --all-files
+## Usage
+### Configuration
+The smooth operation of the **log-audits-to-elasticsearch** application depends on correctly configuring two essential files:
+* The `.env` file for Docker environments
+* the `config.yaml` for the FastAPI application itself
 
-# Auto run the hook before each commit
-pre-commit autoupdate
+#### Environment File (.env) for Docker
+The `.env` file contains essential environment variables, such as Elasticsearch configuration parameters,
+application port settings, and other required variables for various environments.
 
-# Skipping the hook
-git commit --no-verify -m "Your commit message"
+Duplicate the provided [.env-sample](.env-sample) file to create the `.env` file.
 
-# Uninstall the hook
-pre-commit uninstall
-```
+#### Configuration File (config.yaml) for FastAPI
+Just as the `.env` file is essential for Docker, the `config.yaml` file configures the operational parameters of the FastAPI application.
 
-## Search Endpoint Filters
-The search endpoint supports various `POST` parameters for filtering search results and enabling customizable queries. Below is a detailed overview of each supported parameter.
+Create the `config.yaml` by copying from [config-sample.yaml](config-sample.yaml).
+This file will enable you to customize the FastAPI application settings, ensuring it operates according to your specific requirements.
 
-### Limit
-The `max_results` parameter controls the maximum number of search hits to return. It provides a way to paginate results or limit the response size for large datasets.
+### FastAPI endpoints
+| Request Method | Endpoint                   | Authentication | Body/Get Query parameters          | Description                                                                                                                                                                     |
+|----------------|----------------------------|----------------|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `GET`          | `/health`                  | None           | None                               | Health check endpoint.                                                                                                                                                          |
+| `POST`         | `/create`                  | X-API-KEY      | JSON audit log                     | Create a single audit log entry.                                                                                                                                                |
+| `POST`         | `/create-bulk`             | X-API-KEY      | JSON audit logs                    | Create up to 500 audit log entries at once.                                                                                                                                     |
+| `POST`         | `/create/create-bulk-auto` | X-API-KEY      | `{ "bulk_limit": 500 }` (Optional) | Generates up to 500 fictitious audit log entries using the Faker library.<br>**Note**: Only available in the `development` environment to prevent accidental use in production. |
+| `POST`         | `/search`                  | X-API-KEY      | JSON search parameters             | Combine multiple different search parameters and filters to run a search against the Elasticsearch index                                                                        |
 
-| Parameter     | Type    | Range | Default |
-|---------------|---------|-------|---------|
-| `max_results` | Integer | 1–500 | 500     |
+> **Note**: To use endpoints that require an `X-API-KEY`, define the key in the `config.yaml`.
 
+### Audit Logs
+The log-audits-to-elasticsearch application provides a robust RESTful API tailored for systematic event and activity logging.
+This ensures that critical information is captured efficiently within Elasticsearch, facilitating easy retrieval and analysis.
 
-#### Example Usage:
-limit the search results to `10` items:
+#### Audit Log Schema (Elasticsearch)
+| Field             | Optional/Mandatory | Default Value | Description                                                             |
+|-------------------|--------------------|---------------|-------------------------------------------------------------------------|
+| timestamp         | Optional           | None          | The date and time when the event occurred, in ISO 8601 format.          |
+| event_name        | Mandatory          | -             | Name of the event.                                                      |
+| actor.identifier  | Mandatory          | -             | Unique identifier of the actor. Can be an email address, username, etc. |
+| actor.type        | Mandatory          | None          | Type of actor, e.g., 'user' or 'system'.                                |
+| actor.ip_address  | Optional           | None          | IPv4 address of the actor (will be stored anonymized).                  |
+| actor.user_agent  | Optional           | None          | User agent string of the actor's device.                                |
+| application_name  | Mandatory          | -             | Application name.                                                       |
+| module            | Mandatory          | -             | Module name.                                                            |
+| action            | Mandatory          | -             | Action performed.                                                       |
+| comment           | Optional           | None          | Optional comment about the event.                                       |
+| context           | Optional           | None          | The operational context in which the event occurred.                    |
+| resource.type     | Optional           | None          | Type of the resource that was acted upon.                               |
+| resource.id       | Optional           | None          | Unique identifier of the resource.                                      |
+| operation         | Optional           | None          | Type of operation performed.                                            |
+| status            | Optional           | None          | Status of the event.                                                    |
+| endpoint          | Optional           | None          | The API endpoint or URL accessed, if applicable.                        |
+| server.hostname   | Optional           | None          | Hostname of the server where the event occurred.                        |
+| server.vm_name    | Optional           | None          | Name of the virtual machine where the event occurred.                   |
+| server.ip_address | Optional           | None          | IP address of the server  (will be stored anonymized).                  |
+| meta              | Optional           | {}            | Optional metadata about the event.                                      |
 
+#### Audit Log ES Document Example
 ```json
 {
-  "max_results": 10
-}
-```
-
-### Fields
-The `fields` parameter specifies which document fields to include in the search results. By default, all fields are included.
-
-| Parameter | Type                | Default  |
-|-----------|---------------------|----------|
-| `fields`  | List[str] or string | "all"     |
-
-#### Example Usage:
-Retrieve only the fields `event_name` and `timestamp`:
-
-```json
-{
-  "fields": ["event_name", "timestamp"]
-}
-```
-
-### Sort By and Sort Order
-Use the `sort_by` and `sort_order` parameters determine the field by which search results are sorted and the direction of the sort, respectively.
-
-| Parameter   | Type   | Default     |
-|-------------|--------|-------------|
-| `sort_by`   | string | "timestamp" |
-| `sort_order`| string | "asc"       |
-
-#### Example Usage:
-Sort search results by `event_name` in descending order:
-
-```json
-{
-"sort_by": "event_name",
-"sort_order": "desc"
-}
-```
-
-### Date Range
-The `date_range_start` and `date_range_end` parameters filter search results to only include hits within the specified date range.
-
-| Parameter        | Type   | Default   |
-|------------------|--------|-----------|
-| `date_range_start` | string | None    |
-| `date_range_end`   | string | None    |
-
-#### Example Usage:
-Filter search results between January 1st and January 31st, 2024:
-
-```json
-{
-  "date_range_start": "2024-01-01T00:00:00Z",
-  "date_range_end": "2024-01-31T23:59:59Z"
-}
-```
-
-### Search Query (WIP)
-The `search_query` parameter enables a free-text search within the indexed documents.
-
-| Parameter     | Type   | Default |
-|---------------|--------|---------|
-| `search_query`| string | None    |
-
-#### Example Usage:
-Search for documents related to "last update":
-
-```json
-{
-  "search_query": "last update"
-}
-```
-
-### Exact Matches
-The `exact_matches` parameter allows filtering search results based on exact matches for specified fields.
-
-| Parameter      | Type                      | Default      |
-|----------------|---------------------------|--------------|
-| `exact_matches`| Dict[str, Union[str, List[str]]] | None  |
-
-#### Example Usage:
-Find documents where `status` is "success" and `action` is "login":
-
-```json
-{
-  "exact_matches": {
-    "status": "success",
-    "action": "login"
+  "timestamp": "2024-04-06T23:02:25.934470+02:00",
+  "event_name": "data_deletion",
+  "actor": {
+    "identifier": "buckleyjames",
+    "type": "user",
+    "ip_address": "192.0.0.0",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.1 (KHTML, like Gecko) Chrome/54.0.855.0 Safari/536.1"
+  },
+  "application_name": "user-management-service",
+  "module": "admin",
+  "action": "DELETE",
+  "comment": "Monthly housekeeping.",
+  "context": "admin_user_management",
+  "resource": {
+    "type": "user_data"
+  },
+  "operation": "delete",
+  "status": "success",
+  "endpoint": "/user/{user_id}/delete",
+  "server": {
+    "hostname": "server-01",
+    "vm_name": "vm-01",
+    "ip_address": "10.10.0.0"
+  },
+  "meta": {
+    "api-version": "1",
+    "app-version": "1.0.0"
   }
 }
 ```
 
-### Combined Parameters
-The following examples demonstrate how to combine various search parameters to achieve precise, customized search results that cater to different query needs and scenarios.
+#### Create a Single Audit Log
+To record an individual log entry, dispatch a `POST` request to the endpoint `/create`. The request must include a JSON payload detailing the specifics of the log entry.
 
-#### Example 1: Date Range with Exact Matches and Sorting
-```json
-{
-  "date_range_start": "2024-01-01T00:00:00Z",
-  "date_range_end": "2024-01-31T23:59:59Z",
-  "exact_matches": {
-    "event_name": "data_backup"
-  },
-  "sort_by": "timestamp",
-  "sort_order": "desc"
-}
-```
+#### Create Bulk Audit Logs
+To log up to `500` entries in a single operation, utilize the `/create-bulk` endpoint. Similar to the single entry endpoint, this requires a JSON payload containing an array of log entry details.
 
-#### Example 2: Free Text Search with Field Limitation and Ascending Sort Order
-```json
-{
-  "search_query": "login success",
-  "fields": ["event_name", "timestamp"],
-  "sort_by": "event_name",
-  "sort_order": "asc"
-}
-```
+#### Create Automated Bulk Audit Logs
+The `/create/create-bulk-auto` endpoint provides an automated solution for generating and logging up to `500` demo audit log entries simultaneously. Leveraging Python's Faker library, this endpoint is ideal for populating your Elasticsearch with realistic yet fictitious data for development or testing purposes.
 
-#### Example 3: Exclusions with Date Range and Aggregations
-```json
-{
-  "date_range_start": "2024-02-01T00:00:00Z",
-  "date_range_end": "2024-02-28T23:59:59Z",
-  "exclusions": {
-    "event_name": ["role_update", "file_access"]
-  },
-  "aggregations": {
-    "status_counts": {
-      "terms": {
-        "field": "status"
-      }
-    }
-  }
-}
-```
+> It's important to note that `/create/create-bulk-auto` is only available in the development environment to prevent accidental use in production.
 
-#### Example 4: Combining Free Text and Exact Matches with Minimum Should Match
-```json
-{
-  "search_query": "critical update",
-  "exact_matches": {
-    "context": "system_maintenance"
-  },
-  "min_should_match": 1,
-  "sort_by": "timestamp",
-  "sort_order": "desc"
-}
-```
+These endpoints serve as your gateway to effective log management, enabling you to maintain a comprehensive audit trail of system events and user activities.
 
-### Example 5: Nested Field Inclusion with Date Range and Custom Fields
-```json
-{
-  "date_range_start": "2024-03-01T00:00:00Z",
-  "date_range_end": "2024-03-15T23:59:59Z",
-  "fields": ["timestamp", "actor.identifier", "actor.user_agent", "resource.type"],
-  "include_nested": true
-}
-```
+### Search Audit Logs
+To search within the audit logs, send a POST request to the `/search` endpoint.
+This endpoint accepts a JSON payload that defines your search criteria and filters,
+allowing for complex queries such as range searches, text searches, and field-specific searches.
 
-## Code Quality and Testing
-These commands are essential to ensuring that the codebase remains clean, well-organized, and thoroughly tested.
+#### Search Features
+* **Flexible Querying:** Tailor your searches by using a variety of query parameters to refine results according to specific requirements, such as time frames, user actions, and status codes.
+* **Range Searches:** Specify start and end dates to retrieve logs from a specific period.
+* **Text Searches:** Utilize keywords or phrases to search within log entries for precise information.
+* **Field-Specific Searches:** Focus your search on specific fields within the log entries for more targeted results.
 
+#### Crafting Search Requests
+Explore [SEARCH_GUIDE.md](SEARCH_GUIDE.md) for a deep dive into search query examples and instructions.
+
+[↑ Back to top](#table-of-contents)
+
+## Running Backups
+To ensure data persistence and safety, it's crucial to back up data volumes regularly.
+This includes volumes like `sa_elasticsearch_data` and `sa_kibana_data`.
+To facilitate this, we use a BusyBox Docker container to execute the [volume_backups.sh](backup/volume_backups.sh) script for performing the backups.
+The backup data is stored in the [backup folder](backup) for safekeeping.
+
+### Executing Backups
+To initiate the backup process through a Docker container, run the following command:
 ```bash
-# Formats all Python files in the project directory to adhere to the Black code style.
-poetry run black .
-
-# Sorts the imports in all Python files in the project directory alphabetically, and automatically separated into sections.
-poetry run isort .
-
-# Checks the project directory for any linting errors, including compliance with PEP 8.
-poetry run flake8 .
-
-# Runs Flake8 linting, excluding any files in the `venv` directory.
-poetry run flake8 --exclude=venv
-
-# Performs static type checking on all Python files in the project directory.
-poetry run mypy .
-
-# Runs MyPy for static type checking, excluding files in the `venv` directory.
-poetry run mypy . --exclude venv
+docker-compose run backup
 ```
 
-### Running Tests (WIP)
-```bash
-# Runs all tests with Pytest under coverage, displaying print statements (`-s`).
-poetry run coverage run -m pytest -s
+### Automating Backups
+To automate the backup process, you can schedule the backup operation using crontab. This enables the Docker container to run at predefined times without manual intervention.
 
-# Runs all tests with verbose output (`-vv` for very verbose) and displaying all print statements.
-poetry run coverage run -m pytest -s -vv
+First, ensure that the backup script is executable:
+```bash
+# Grant execute permissions to the backup script
+chmod +x volume_backups.sh
 ```
 
-## Python Update Script
-This script is used to update the application version in multiple files. The script can be called like this:
+Next, open your crontab file in edit mode:
 ```bash
-python update_version.py 0.6.0
+# Open crontab in edit mode
+crontab -e
 ```
 
+Add the following line to your crontab to schedule a daily backup at 2 AM.
+Ensure to replace `/path/to/your/` with the actual path to your `docker-compose.yml` file:
 ```bash
+# Schedule daily backups at 2 AM
+0 2 * * * docker-compose -f /path/to/your/docker-compose.yml run backup
+```
+This setup ensures that your data volumes are backed up daily, minimizing the risk of data loss and maintaining the integrity of your system.
 
-## TODO
-- [ ] Finalize the README and documentation
-- [ ] Finalize the audit log search filters (`/search`)
-- [x] Finalize Pydantic models for request and response data
-- [ ] Finalize Elasticsearch and Kibana authentication
-- [x] Update the document log entry mappings
-- [ ] Add API tests
-- [ ] Add API middlewares
-- [ ] Add CI/CD pipeline / Workflows / Actions
+[↑ Back to top](#table-of-contents)
+
+## Elasticsearch and Kibana
+Elasticsearch is used for storing, searching, and analyzing audit log documents,
+while Kibana's frontend offers visual analytics on the data stored in Elasticsearch.
+
+### Accessing Elasticsearch
+ES is best accessed via cURL:
+```bash
+# Example: Retrieve the cluster health status
+curl -X GET "http://localhost:9200/_cluster/health?pretty"
+```
+Documentation: [elasticsearch/reference/current/getting-started.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/getting-started.html)
+
+### Accessing Kibana
+Access the Kibana dashboard via [http://localhost:5601](http://localhost:5601).
+Documentation: [kibana/current/introduction.html](https://www.elastic.co/guide/en/kibana/current/introduction.html)
+
+## License
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.

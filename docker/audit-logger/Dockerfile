@@ -55,7 +55,7 @@ RUN \
     rm -rf /root/.cache/pip/ && \
     poetry config virtualenvs.create false
 
-# Docker healthcheck configuration
+# Docker healthcheck configuration.
 HEALTHCHECK \
     --interval=30s \
     --timeout=10s \

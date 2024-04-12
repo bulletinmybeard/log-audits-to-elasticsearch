@@ -135,7 +135,7 @@ class ElasticSearchQueryBuilder:
 
         return self.s.query("range", **{field: query_range})
 
-    def process_filter_type_text_search(self, f: Any) -> Search:
+    def process_filter_type_text_search(self, f: SearchFilterParams) -> Search:
         fields = f.fields or [f.field.value]
         return self.s.query("multi_match", query=f.value, fields=fields)
 
