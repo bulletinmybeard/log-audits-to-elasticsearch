@@ -67,7 +67,7 @@ docker-compose up --build
 ### Configuration
 The smooth operation of the **log-audits-to-elasticsearch** application depends on correctly configuring two essential files:
 * The `.env` file for Docker environments
-* the `config.yaml` for the FastAPI application itself
+* The `config.yaml` for the FastAPI application itself
 
 #### Environment File (.env) for Docker
 The `.env` file contains essential environment variables, such as Elasticsearch configuration parameters,
