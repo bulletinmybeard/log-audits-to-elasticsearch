@@ -1,0 +1,83 @@
+services:
+  audit-logger:
+    container_name: audit-logger
+    build:
+      context: .
+      dockerfile: docker/audit-logger/Dockerfile
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+    depends_on:
+      - elasticsearch
+      - kibana
+    ports:
+      - "8000:8000"
+    networks:
+      - audit_logger
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: arm64v8/elasticsearch:7.17.19
+    env_file:
+      - .env
+    environment:
+      - discovery.type=single-node
+      - ingest.geoip.downloader.enabled=false
+      - path.repo=/usr/share/elasticsearch/repository
+      - repositories.fs.location=/usr/share/elasticsearch/repository
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    volumes:
+      - sa_elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - audit_logger
+
+  kibana:
+    container_name: kibana
+    build:
+      context: ./docker/kibana
+      dockerfile: Dockerfile
+      args:
+        KIBANA_VERSION: 7.17.19
+    env_file:
+      - .env
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+    restart: unless-stopped
+    volumes:
+      - sa_kibana_data:/usr/share/kibana/data
+      - ./docker/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    networks:
+      - audit_logger
+    depends_on:
+      - elasticsearch
+
+  backup:
+    container_name: backup
+    image: busybox
+    volumes:
+      - sa_elasticsearch_data:/usr/share/elasticsearch/data
+      - sa_kibana_data:/usr/share/kibana/data
+      - ./backup:/backup
+    command: sh ./backup/volume_backups.sh
+    restart: no
+    profiles:
+      - backup
+
+volumes:
+  sa_elasticsearch_data:
+  sa_kibana_data:
+
+networks:
+  audit_logger:
+    driver: bridge

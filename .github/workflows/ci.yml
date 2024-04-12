@@ -1,0 +1,26 @@
+name: Run Pre-Commit Checks
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.2'
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run specific hooks
+        run: |
+          pre-commit run trailing-whitespace
+          pre-commit run end-of-file-fixer
+          pre-commit run check-yaml
+          pre-commit run check-added-large-files
+          pre-commit run black 

@@ -1,0 +1,14 @@
+# Ignore everything
+**
+
+# But whitelist necessary files and directories
+!audit_logger/**
+!docker/**
+!config.yaml
+!Dockerfile
+!entrypoint.sh
+!*.sh
+!*.json
+!*.yml
+!pyproject.toml
+!poetry.lock

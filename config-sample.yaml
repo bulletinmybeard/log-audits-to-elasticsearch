@@ -1,0 +1,18 @@
+timezone: "Europe/Amsterdam"
+environment: development
+authentication:
+  api_key: "change-me-plz"
+middlewares:
+  cors:
+    allow_origins:
+      - my-domain.me
+      - my-domain-com
+    allow_credentials: true
+    allow_methods:
+      - GET
+      - PUT
+      - POST
+      - DELETE
+    allow_headers:
+      - content-type
+      - user-agent
