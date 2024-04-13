@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from audit_logger.custom_logger import get_logger
 from audit_logger.models.config import AppConfig
 
-logger = get_logger("audit_service")
+logger = get_logger("audit_logger")
 
 
 def add_middleware(app: FastAPI, config: AppConfig) -> None:

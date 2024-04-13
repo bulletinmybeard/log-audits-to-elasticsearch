@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
@@ -159,7 +159,7 @@ class ElasticSearchQueryBuilder:
         return self.s
 
     @staticmethod
-    def calculate_date_range(value: str):
+    def calculate_date_range(value: str) -> Tuple[str, str]:
         """Calculate 'gte' and 'lte' values based on 'value' (e.g., 'today', 'this-week')."""
         now = current_time()
         if value == "today":
