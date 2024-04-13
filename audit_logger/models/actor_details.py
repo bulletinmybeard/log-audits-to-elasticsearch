@@ -17,7 +17,6 @@ class ActorDetails(CustomBaseModel):
         "Can be an email address, username, etc.",
     )
     type: ActorType = Field(
-        default=None,
         description="Type of actor, e.g., 'user' or 'system'.",
     )
     ip_address: Optional[IPvAnyAddress] = Field(

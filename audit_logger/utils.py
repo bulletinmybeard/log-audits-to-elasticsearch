@@ -217,12 +217,12 @@ async def process_audit_logs(
         ) from e
 
     except TransportError as e:  # Superclass for more specific transport errors
-        if e.status_code == 404:
+        if e.status_code == 404:  # type: ignore
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e),
             ) from e
-        elif e.status_code == 409:
+        elif e.status_code == 409:  # type: ignore
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(e),
@@ -340,7 +340,7 @@ def load_env_vars() -> EnvVars:
         env_vars: Dict[str, Any] = {}
         for key, value in os.environ.items():
             model_field = key.lower()
-            if model_field in EnvVars.__fields__:
+            if model_field in EnvVars.__fields__:  # type: ignore
                 env_vars[model_field] = value
 
         logger.info("Env vars loaded.")
@@ -350,5 +350,5 @@ def load_env_vars() -> EnvVars:
         raise
 
 
-def current_time(timezone="Europe/Amsterdam"):
+def current_time(timezone: str="Europe/Amsterdam") -> Union[datetime, str]:
     return datetime.now(ZoneInfo(timezone))

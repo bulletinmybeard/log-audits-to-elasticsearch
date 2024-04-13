@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 from zoneinfo import ZoneInfo
 
 from pydantic import Field, field_validator
@@ -10,18 +10,17 @@ from audit_logger.models.resource import ResourceDetails
 from audit_logger.models.server_details import ServerDetails
 
 
-def current_time(timezone="Europe/Amsterdam"):
+def current_time(timezone: str ="Europe/Amsterdam") -> datetime:
     return datetime.now(ZoneInfo(timezone))
 
 
 class AuditLogEntry(CustomBaseModel):
-    timestamp: Optional[str] = Field(
+    timestamp: Optional[Union[datetime, str]] = Field(
         default_factory=current_time,
         description="The date and time when the event occurred, in ISO 8601 format.",
     )
     event_name: str = Field(description="Name of the event.")
     actor: ActorDetails = Field(
-        default=None,
         description="Details about the actor who initiated the event.",
     )
     application_name: str = Field(description="Application name.")
@@ -55,7 +54,7 @@ class AuditLogEntry(CustomBaseModel):
     )
 
     @field_validator("timestamp")
-    def format_timestamp(cls, v):
+    def format_timestamp(cls, v: Any) -> Union[datetime, str]:
         if isinstance(v, datetime):
             return v.isoformat()
         return v

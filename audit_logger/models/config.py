@@ -1,8 +1,6 @@
 from typing import List, Optional
 
-from pydantic import Field, BaseModel
-
-from audit_logger.models.custom_base import CustomBaseModel
+from pydantic import BaseModel, Field
 
 
 class CORSSettings(BaseModel):

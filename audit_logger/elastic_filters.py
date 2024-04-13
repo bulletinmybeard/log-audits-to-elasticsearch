@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import A, Q, Search
@@ -69,9 +69,9 @@ class ElasticSearchQueryBuilder:
 
     def select_fields(self, params: SearchParams) -> Search:
         """Select the fields to be returned."""
-        return self.s.source(**{f"{params.fields_mode.value}s": params.fields})
+        return self.s.source(**{f"{params.fields_mode.value}s": params.fields})  # type: ignore
 
-    def process_aggregations(self, aggs: Dict[str, Any]) -> Search:
+    def process_aggregations(self, aggs: Dict[str, Any]) -> Search:  # type: ignore
         for agg_name, values in aggs.items():
             field = values.get("field")
             agg_type = values.get("type")
@@ -128,15 +128,15 @@ class ElasticSearchQueryBuilder:
             "timestamp" if f.field == FieldIdentifierEnum.TIMESTAMP else f.field.value
         )
         if f.value:
-            gte, lte = self.calculate_date_range(f.value)
+            gte, lte = self.calculate_date_range(f.value)  # type: ignore
             query_range = {"gte": gte, "lte": lte}
         else:
-            query_range = {"gte": f.gte, "lte": f.lte}
+            query_range = {"gte": f.gte, "lte": f.lte}  # type: ignore
 
         return self.s.query("range", **{field: query_range})
 
     def process_filter_type_text_search(self, f: SearchFilterParams) -> Search:
-        fields = f.fields or [f.field.value]
+        fields = f.fields or [f.field.value]  # type: ignore
         return self.s.query("multi_match", query=f.value, fields=fields)
 
     def process_filter_type_wildcard(self, f: SearchFilterParams) -> Search:
@@ -159,7 +159,7 @@ class ElasticSearchQueryBuilder:
         return self.s
 
     @staticmethod
-    def calculate_date_range(value: str):
+    def calculate_date_range(value: str) -> Tuple[str, str]:
         """Calculate 'gte' and 'lte' values based on 'value' (e.g., 'today', 'this-week')."""
         now = current_time()
         if value == "today":

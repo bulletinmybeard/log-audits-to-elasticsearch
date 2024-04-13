@@ -56,10 +56,8 @@ class SearchResults(CustomBaseModel):
 
 
 class GenericResponse(CustomBaseModel):
-    status: str = Field(default=None, description="The status of the response.")
-    success_count: int = Field(
-        default=None, description="The number of successful items in the response."
-    )
+    status: str = Field(description="The status of the response.")
+    success_count: int = Field(description="The number of successful items in the response.")
     failed_count: Optional[int] = Field(
         default=0, description="The number of failed items in the response."
     )

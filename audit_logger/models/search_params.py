@@ -76,7 +76,6 @@ class AggregationTypeEnum(str, Enum):
 
 class SearchFilterParams(CustomBaseModel):
     field: FieldIdentifierEnum = Field(
-        default=None,
         description="",
     )
     fields: Optional[List[FieldIdentifierEnum]] = Field(
@@ -84,7 +83,6 @@ class SearchFilterParams(CustomBaseModel):
         description="",
     )
     type: FilterTypeEnum = Field(
-        default=None,
         description="",
     )
     value: Optional[Union[str, int, float, Decimal]] = Field(
@@ -180,10 +178,10 @@ class SearchParams(MaxResultsMixin, CustomBaseModel):
         description="Determines if `fields` are included or excluded. INCLUDE or EXCLUDE.",
     )
     sort_by: Optional[FieldIdentifierEnum] = Field(
-        default="timestamp", description="Field to sort the search results by."
+        default=FieldIdentifierEnum.TIMESTAMP, description="Field to sort the search results by."
     )
     sort_order: Optional[SortOrderEnum] = Field(
-        default="asc",
+        default=SortOrderEnum.ASC,
         description="Sort order of results: 'asc' for ascending, 'desc' for descending.",
     )
     filters: Optional[List[SearchFilterParams]] = Field(

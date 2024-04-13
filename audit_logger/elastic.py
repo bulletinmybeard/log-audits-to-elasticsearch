@@ -45,9 +45,9 @@ class CustomElasticsearch(Elasticsearch):
         try:
             if not self.indices.exists(index=index_name):
                 raise NotFoundError(
-                    meta={"index": index_name},
+                    meta={"index": index_name},  # type: ignore
                     body=f"[Elastic] index '{index_name}' does not exist",
-                )
+                )  # type: ignore
         except NotFoundError as e:
             logger.error(
                 "[Elastic] Not found error: %s\nFull stack trace:\n%s",
