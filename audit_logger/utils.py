@@ -350,5 +350,5 @@ def load_env_vars() -> EnvVars:
         raise
 
 
-def current_time(timezone="Europe/Amsterdam"):
+def current_time(timezone: str="Europe/Amsterdam") -> Union[datetime, str]:
     return datetime.now(ZoneInfo(timezone))
