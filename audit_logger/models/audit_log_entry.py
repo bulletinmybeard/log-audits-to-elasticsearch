@@ -10,7 +10,7 @@ from audit_logger.models.resource import ResourceDetails
 from audit_logger.models.server_details import ServerDetails
 
 
-def current_time(timezone="Europe/Amsterdam"):
+def current_time(timezone: str ="Europe/Amsterdam") -> datetime:
     return datetime.now(ZoneInfo(timezone))
 
 

@@ -16,8 +16,8 @@ def add_middleware(app: FastAPI, config: AppConfig) -> None:
     """
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.api.middlewares.cors.allow_origins,
-        allow_credentials=config.api.middlewares.cors.allow_credentials,
-        allow_methods=config.api.middlewares.cors.allow_methods,
-        allow_headers=config.api.middlewares.cors.allow_headers,
+        allow_origins=config.middlewares.cors.allow_origins,
+        allow_credentials=config.middlewares.cors.allow_credentials,
+        allow_methods=config.middlewares.cors.allow_methods,
+        allow_headers=config.middlewares.cors.allow_headers,
     )
