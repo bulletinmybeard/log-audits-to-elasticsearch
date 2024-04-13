@@ -233,7 +233,7 @@ curl -X GET "http://localhost:9200/_cluster/health?pretty"
 Documentation: [elasticsearch/reference/current/getting-started.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/getting-started.html)
 
 ### Accessing Kibana
-Access the Kibana dashboard via [http://localhost:5601](http://localhost:5601).
+Access the Kibana dashboard via [http://localhost:5601](http://localhost:5601).<br>
 Documentation: [kibana/current/introduction.html](https://www.elastic.co/guide/en/kibana/current/introduction.html)
 
 ## License

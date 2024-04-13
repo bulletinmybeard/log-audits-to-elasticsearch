@@ -46,7 +46,8 @@ profile = "black"
 max-line-count = 600
 max-line-length = 100
 exclude = [
-    "audit_logger/models/__init__.py"
+    "audit_logger/models/__init__.py",
+    ".venv"
 ]
 
 [tool.coverage.run]
