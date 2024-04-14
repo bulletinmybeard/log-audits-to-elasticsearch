@@ -16,6 +16,9 @@ leveraging Elasticsearch's powerful scalability and search capabilities.
   - [Configuration](#configuration)
     - [Environment File (.env) for Docker](#environment-file-env-for-docker)
     - [Configuration File (config.yaml) for FastAPI](#configuration-file-configyaml-for-fastapi)
+  - [Run the Application](#run-the-application)
+    - [Bash Script](#bash-script)
+    - [Docker Containers](#docker-containers)
   - [FastAPI endpoints](#fastapi-endpoints)
   - [Audit Logs](#audit-logs)
     - [Audit Log Schema (Elasticsearch)](#audit-log-schema-elasticsearch)
@@ -80,6 +83,22 @@ Just as the `.env` file is essential for Docker, the `config.yaml` file configur
 
 Create the `config.yaml` by copying from [config-sample.yaml](config-sample.yaml).
 This file will enable you to customize the FastAPI application settings, ensuring it operates according to your specific requirements.
+
+
+### Run the Application
+Run the application either standalone using the bash script [run_dev.sh](run_dev.sh) or run it together with Elasticsearch and Kibana via Docker Compose.
+
+#### Bash Script
+Make sure the `run_dev.sh` script is executable (`chmod +x run_dev.sh`) and then execute it with `./run_dev.sh`.
+The script reads all environment variables from `.env`, checks whether `poetry` is installed, installs Python dependencies, and runs the FastAPI standalone.
+
+#### Docker Containers
+Once you have Docker and Docker Compose installed on your machine, you can start the Python Audit Logger application alongside Elasticsearch and Kibana by executing the command `docker-compose up`.
+For instances where you need to build or rebuild the Docker images before running, you can append the `--build` flag as follows: `docker-compose up --build`.
+This streamlined process ensures that all necessary components, including [Elasticsearch](#elasticsearch-and-kibana) and Kibana,
+are automatically set up and interconnected, facilitating a seamless development and testing environment.
+
+> If you want to utilize an external Elasticsearch instance, modify the `.env` file accordingly and only initiate the audit log service by running: `docker-compose up audit-logger`.
 
 ### FastAPI endpoints
 | Request Method | Endpoint                   | Authentication | Body/Get Query parameters          | Description                                                                                                                                                                     |
