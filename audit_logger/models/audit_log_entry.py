@@ -10,7 +10,7 @@ from audit_logger.models.resource import ResourceDetails
 from audit_logger.models.server_details import ServerDetails
 
 
-def current_time(timezone: str ="Europe/Amsterdam") -> datetime:
+def current_time(timezone: str = "Europe/Amsterdam") -> datetime:
     return datetime.now(ZoneInfo(timezone))
 
 
@@ -59,3 +59,7 @@ class AuditLogEntry(CustomBaseModel):
         if isinstance(v, datetime):
             return v.isoformat()
         return v
+
+    def to_hashable_tuple(self):
+        # Create a hashable representation based on relevant log entry fields.
+        return (self.timestamp, self.event_name, self.application_name, self.action)
