@@ -125,7 +125,7 @@ async def create_bulk_audit_log_entries(
     Returns:
         CreateResponse
     """
-    bulk_limit = 350
+    bulk_limit = 500
     if len(audit_logs) > bulk_limit:
         raise BulkLimitExceededError(limit=bulk_limit)
 
