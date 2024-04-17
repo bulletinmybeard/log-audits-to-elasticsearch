@@ -157,6 +157,7 @@ async def process_audit_logs(
     elastic: Elasticsearch,
     elastic_index_name: str,
     log_entries: Union[AuditLogEntry, List[Union[Dict, AuditLogEntry]]],
+    original_bulk_amount: int = 0,
 ) -> JSONResponse:
     """
     Processes a list of audit log entries by sending them to Elasticsearch using the bulk API.
@@ -188,11 +189,15 @@ async def process_audit_logs(
             )
 
         if is_bulk_operation:
+            skipped_items = (
+                (original_bulk_amount - len(log_entries)) if original_bulk_amount else 0
+            )
             return JSONResponse(
                 content={
                     "status": "success",
                     "success_count": success_count,
                     "failed_items": failed_items,
+                    "skipped_items": skipped_items,
                 },
                 status_code=status.HTTP_207_MULTI_STATUS,
             )
@@ -350,5 +355,19 @@ def load_env_vars() -> EnvVars:
         raise
 
 
-def current_time(timezone: str="Europe/Amsterdam") -> Union[datetime, str]:
+def current_time(timezone: str = "Europe/Amsterdam") -> Union[datetime, str]:
     return datetime.now(ZoneInfo(timezone))
+
+
+def find_duplicates(audit_logs: List[AuditLogEntry]) -> List[AuditLogEntry]:
+    unique_hashes = set()
+    duplicate_entries = []
+
+    for log_entry in audit_logs:
+        entry_hash = log_entry.to_hashable_tuple()
+        if entry_hash in unique_hashes:
+            duplicate_entries.append(log_entry)
+        else:
+            unique_hashes.add(entry_hash)
+
+    return duplicate_entries

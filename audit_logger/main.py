@@ -24,6 +24,7 @@ from audit_logger.models import (
     SearchResults,
 )
 from audit_logger.utils import (
+    find_duplicates,
     generate_audit_log_entries_with_fake_data,
     load_env_vars,
     process_audit_logs,
@@ -105,7 +106,9 @@ async def create_audit_log_entry(audit_log: AuditLogEntry = Body(...)) -> Any:
         HTTPException
     """
     return await process_audit_logs(
-        elastic, cast(str, env_vars.elastic_index_name), audit_log
+        elastic,
+        cast(str, env_vars.elastic_index_name),
+        audit_log,
     )
 
 
@@ -133,7 +136,8 @@ async def create_bulk_audit_log_entries(
         return await process_audit_logs(
             elastic,
             cast(str, env_vars.elastic_index_name),
-            [dict(model.dict()) for model in audit_logs],
+            [dict(entry.dict()) for entry in find_duplicates(audit_logs)],
+            len(audit_logs),
         )
     except HTTPException as e:
         raise e
