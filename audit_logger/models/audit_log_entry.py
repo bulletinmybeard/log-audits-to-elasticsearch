@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime
 from typing import Any, Dict, Optional, Union
 from zoneinfo import ZoneInfo
@@ -62,4 +63,9 @@ class AuditLogEntry(CustomBaseModel):
 
     def to_hashable_tuple(self):
         # Create a hashable representation based on relevant log entry fields.
-        return (self.timestamp, self.event_name, self.application_name, self.action)
+        hash_string = "_".join([
+            str(self.event_name),
+            str(self.application_name),
+            str(self.action),
+        ])
+        return hashlib.md5(hash_string.encode('utf-8')).hexdigest()

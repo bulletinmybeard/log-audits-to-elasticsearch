@@ -125,17 +125,18 @@ def create_bulk_operations(
     operations: List[Dict] = []
     for entry in log_entries:
         for ip_field in ["ip_address", "actor.ip_address", "server.ip_address"]:
-            ip_path = ip_field.split(".")
-            current_level = entry
-            for part in ip_path[:-1]:
-                if part in current_level:
-                    current_level = current_level[part]
-                else:
-                    break
-            if ip_path[-1] in current_level:
-                current_level[ip_path[-1]] = anonymize_ip_address(
-                    current_level[ip_path[-1]]
-                )
+            if ip_field in entry:
+                ip_path = ip_field.split(".")
+                current_level = entry
+                for part in ip_path[:-1]:
+                    if part in current_level:
+                        current_level = current_level[part]
+                    else:
+                        break
+                if ip_path[-1] in current_level:
+                    current_level[ip_path[-1]] = anonymize_ip_address(
+                        current_level[ip_path[-1]]
+                    )
         operations.append({"_index": index_name, "_op_type": "index", "_source": entry})
     return operations
 
@@ -360,14 +361,14 @@ def current_time(timezone: str = "Europe/Amsterdam") -> Union[datetime, str]:
 
 
 def find_duplicates(audit_logs: List[AuditLogEntry]) -> List[AuditLogEntry]:
-    unique_hashes = set()
-    duplicate_entries = []
+    """Find duplicated log entries and only retain the first occurrence of each duplicated log entry."""
+    seen_hashes = set()
+    unique_entries = []
 
     for log_entry in audit_logs:
         entry_hash = log_entry.to_hashable_tuple()
-        if entry_hash in unique_hashes:
-            duplicate_entries.append(log_entry)
-        else:
-            unique_hashes.add(entry_hash)
+        if entry_hash not in seen_hashes:
+            seen_hashes.add(entry_hash)
+            unique_entries.append(log_entry)
 
-    return duplicate_entries
+    return unique_entries
