@@ -63,9 +63,11 @@ class AuditLogEntry(CustomBaseModel):
 
     def to_hashable_tuple(self):
         # Create a hashable representation based on relevant log entry fields.
-        hash_string = "_".join([
-            str(self.event_name),
-            str(self.application_name),
-            str(self.action),
-        ])
-        return hashlib.md5(hash_string.encode('utf-8')).hexdigest()
+        hash_string = "_".join(
+            [
+                str(self.event_name),
+                str(self.application_name),
+                str(self.action),
+            ]
+        )
+        return hashlib.md5(hash_string.encode("utf-8")).hexdigest()

@@ -361,7 +361,9 @@ def current_time(timezone: str = "Europe/Amsterdam") -> Union[datetime, str]:
 
 
 def find_duplicates(audit_logs: List[AuditLogEntry]) -> List[AuditLogEntry]:
-    """Find duplicated log entries and only retain the first occurrence of each duplicated log entry."""
+    """
+    Find duplicated log entries and only retain the first occurrence of each duplicated log entry.
+    """
     seen_hashes = set()
     unique_entries = []
 
